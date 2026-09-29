@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Creator onboarding — CollabTable</title>
+<meta name="description" content="Set up your food creator profile on CollabTable: handles, cuisine niches, and a rate card.">
+<meta name="theme-color" content="#FE002A">
+<style>
+/* OD-LAYOUT-PRIMITIVES v1 — structure only: display, flex/grid, overflow, wrapping, ratio.
+   Put this @layer first; product CSS outside the layer always wins. */
+@layer od-layout {
+  :where(.od-stack,.od-row,.od-row-top,.od-cluster,.od-grid,.od-field,.od-stat,.od-cell,.od-tile) > :where(*) { min-width: 0; }
+
+  /* containers */
+  .od-stack   { display: flex; flex-direction: column; gap: var(--od-gap, 8px); }
+  .od-row     { display: flex; align-items: center; gap: var(--od-gap, 8px); }
+  .od-row-top { display: flex; align-items: flex-start; gap: var(--od-gap, 8px); }
+  .od-cluster { display: flex; flex-wrap: wrap; align-items: center; gap: var(--od-gap, 8px); }
+  .od-fill    { flex: 1 1 0; min-width: 0; }
+  .od-fixed   { flex: none; }
+  .od-grid    { display: grid; gap: var(--od-gap, 12px); grid-template-columns: repeat(var(--od-cols, 3), minmax(0, 1fr)); }
+
+  /* stacked information: each piece is its own line — never sibling inline spans */
+  .od-stat, .od-field, .od-cell { display: grid; gap: var(--od-gap, 2px); }
+  :where(.od-stat,.od-field,.od-cell) > :where(*) { display: block; }
+  .od-tile { display: grid; grid-template-rows: auto 1fr; }
+  :where(.od-tile) > :where(*) { display: block; }
+
+  /* media keeps its intrinsic ratio by default; never a distorted or cropped
+     cover by accident. height:auto lets the ratio win over an <img height="…">
+     attribute. Cropping to a uniform box is an explicit opt-in: set --od-ratio
+     AND add .od-media-cover together (per the core rule, only where a crop is
+     deliberate — tile thumbs, decorative fills — never on full-frame content). */
+  .od-media { display: block; width: 100%; height: auto; aspect-ratio: var(--od-ratio, auto); }
+  .od-media-cover { object-fit: cover; }
+
+  /* data text only — authored copy is rewritten to its budget instead */
+  .od-truncate { display: block; max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .od-clamp-2, .od-clamp-3 { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+  .od-clamp-2 { -webkit-line-clamp: 2; }
+  .od-clamp-3 { -webkit-line-clamp: 3; }
+  .od-lines-2 { min-height: calc(2 * 1.4em); }   /* block-level reservation for a shared baseline */
+  .od-nowrap  { white-space: nowrap; }           /* 数字+单位 · 价格+起 · 日期+星期 */
+  .od-keep    { word-break: keep-all; overflow-wrap: anywhere; } /* CJK labels break at spaces / <wbr> first */
+
+  /* screen skeleton (optional): bars take their own space, the middle scrolls — no padding guessed for chrome */
+  .od-screen { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; height: 100%; }
+  .od-scroll { overflow-y: auto; overscroll-behavior: contain; min-height: 0; }
+
+  /* horizontal rail: the next item peeks at the edge; trailing room survives overflow */
+  .od-rail { display: flex; gap: var(--od-gap, 8px); overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none;
+             padding-inline: var(--od-rail-pad, 16px); scroll-padding-inline: var(--od-rail-pad, 16px); }
+  .od-rail::-webkit-scrollbar { display: none; }
+  :where(.od-rail) > :where(*) { flex: none; scroll-snap-align: start; }
+  :where(.od-rail) > :where(:last-child) { margin-inline-end: var(--od-rail-pad, 16px); }
+
+  .od-spacer { flex: none; visibility: hidden; pointer-events: none; }
+  .od-touch  { min-width: 44px; min-height: 44px; }
+}
+/* /OD-LAYOUT-PRIMITIVES v1 */
+</style>
+<link rel="stylesheet" href="assets/theme.css">
+<style>
+  .ob-shell { display: grid; gap: var(--s6); padding-top: var(--s7); padding-bottom: var(--s9); }
+  .ob-card { padding: var(--s6); background: var(--surface); border: 1px solid var(--line-10); border-radius: var(--r-xl); }
+  .ob-pane { display: grid; gap: var(--s5); }
+  .ob-h { display: block; font-size: var(--f-2xl); font-weight: 500; color: var(--fg); }
+  .ob-p { display: block; max-width: var(--measure); font-size: var(--f-sm); color: var(--muted-fg); }
+  .ob-cols { display: grid; gap: var(--s4); grid-template-columns: 1fr; }
+  .ob-nav { display: flex; align-items: center; justify-content: space-between; gap: var(--s4); padding-top: var(--s5); border-top: 1px solid var(--line-05); }
+  .ob-side-t { display: block; font-weight: 500; color: var(--fg); }
+  .ob-side-s { display: block; margin-top: var(--s1); font-size: var(--f-xs); color: var(--muted-fg); }
+  .handles { display: grid; gap: var(--s3); }
+  .handle-row { display: flex; align-items: center; gap: var(--s3); padding: var(--s3) var(--s4); background: var(--surface-2); border: 1px solid var(--line-05); border-radius: var(--r-md); }
+  .handle-net { flex: none; width: 96px; font-size: var(--f-xs); color: var(--muted-fg); }
+  .handle-lock { margin-left: auto; }
+  .rate-preview { display: grid; gap: var(--s4); }
+  @media (min-width: 768px) { .ob-cols { grid-template-columns: 1fr 1fr; } }
+  @media (min-width: 1024px) { .ob-shell { grid-template-columns: minmax(0, 1fr) 320px; align-items: start; } }
+</style>
+</head>
+<body>
+<div class="bloom" aria-hidden="true"></div>
+
+<header class="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="index.html" aria-label="CollabTable home">
+      <span class="brand-a">COLLAB</span><span class="brand-b">TABLE</span>
+    </a>
+    <nav class="nav-links" aria-label="Primary">
+      <a class="nav-link" href="landing.html">Overview</a>
+      <a class="nav-link" href="discover-creators.html">For restaurants</a>
+      <a class="nav-link" href="discover-restaurants.html" aria-current="page">For creators</a>
+    </nav>
+    <div class="nav-actions">
+      <a class="btn btn-quiet" href="index.html">All screens</a>
+      <a class="btn btn-primary" href="restaurant-onboarding.html">Restaurant signup</a>
+      <button class="burger" type="button" data-burger aria-expanded="false" aria-controls="mnav" aria-label="Open menu">
+        <span></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="mnav" id="mnav" data-mnav aria-hidden="true">
+  <a class="mnav-link" href="index.html">All screens</a>
+  <a class="mnav-link" href="landing.html">Overview</a>
+  <a class="mnav-link" href="influencer-onboarding.html" aria-current="page">Creator onboarding</a>
+  <a class="mnav-link" href="influencer-dashboard.html">Creator dashboard</a>
+  <a class="mnav-link" href="discover-restaurants.html">Discover restaurants</a>
+  <a class="mnav-link" href="campaign-detail.html">Campaign detail</a>
+</div>
+
+<main class="page">
+  <div class="wrap">
+    <div class="ob-shell" data-stepper>
+
+      <div>
+        <span class="eyebrow eyebrow-red">Creator signup</span>
+        <h1 class="h2">Set up your creator profile</h1>
+        <p class="ob-p mt-6">Three steps. Your rate card is what makes you match the right campaigns,
+          and your handles stay masked from restaurants until a deal is agreed.</p>
+
+        <div class="steps mt-6" style="flex-wrap:wrap;gap:var(--s3)">
+          <span class="step" data-step data-on="true" data-done="false">
+            <span class="step-dot">1</span><span class="step-label">Profile</span>
+          </span>
+          <span class="step-line"></span>
+          <span class="step" data-step data-on="false" data-done="false">
+            <span class="step-dot">2</span><span class="step-label">Portfolio</span>
+          </span>
+          <span class="step-line"></span>
+          <span class="step" data-step data-on="false" data-done="false">
+            <span class="step-dot">3</span><span class="step-label">Rates</span>
+          </span>
+        </div>
+        <p class="hint mt-6" data-step-live role="status" aria-live="polite">Step 1 of 3</p>
+      </div>
+
+      <div>
+        <!-- step 1 -->
+        <section class="ob-card pane" data-pane>
+          <div>
+            <h2 class="ob-h">Your profile</h2>
+            <p class="ob-p mt-6">This is what a restaurant sees first, so name the food you actually shoot.</p>
+          </div>
+
+          <form data-form data-reset data-success="Profile saved." novalidate>
+            <div class="form-sum" data-form-summary role="alert"></div>
+
+            <div class="ob-cols">
+              <div class="field">
+                <label class="label label-req" for="c-name">Display name</label>
+                <input class="input" id="c-name" name="name" type="text" required placeholder="Creator Ananya">
+                <p class="err" data-ok="">Use the name you want to be credited under.</p>
+              </div>
+              <div class="field">
+                <label class="label label-req" for="c-city">Based in</label>
+                <input class="input" id="c-city" name="city" type="text" required placeholder="Mumbai">
+                <p class="err" data-ok="">Campaigns filter by city, so be accurate.</p>
+              </div>
+            </div>
+
+            <div class="field mt-6">
+              <span class="label label-req">Cuisine niches</span>
+              <div class="row-wrap" role="group" aria-label="Cuisine niches" data-chipgroup="multi">
+                <button class="chip" type="button" aria-pressed="true">Japanese</button>
+                <button class="chip" type="button" aria-pressed="true">Street food</button>
+                <button class="chip" type="button" aria-pressed="false">North Indian</button>
+                <button class="chip" type="button" aria-pressed="false">South Indian</button>
+                <button class="chip" type="button" aria-pressed="false">Desserts</button>
+                <button class="chip" type="button" aria-pressed="false">Biryani</button>
+                <button class="chip" type="button" aria-pressed="false">Cafe &amp; bakery</button>
+              </div>
+              <p class="hint">Pick at least two. Niche choices drive every campaign you get matched to.</p>
+            </div>
+
+            <div class="field mt-6">
+              <label class="label label-req" for="c-about">What you shoot</label>
+              <textarea class="textarea" id="c-about" name="about" required
+                        placeholder="Your style, the kinds of restaurants you suit, and how you handle a shoot day."></textarea>
+              <p class="err" data-ok="">Two or three lines. Restaurants read this before they shortlist.</p>
+            </div>
+
+            <div class="ob-cols mt-6">
+              <div class="field">
+                <label class="label label-req" for="c-email">Email</label>
+                <input class="input" id="c-email" name="email" type="email" required autocomplete="email" placeholder="you@example.com">
+                <p class="err" data-ok="">Deal notifications go here.</p>
+              </div>
+              <div class="field">
+                <label class="label label-req" for="c-phone">Phone</label>
+                <input class="input" id="c-phone" name="phone" type="tel" required autocomplete="tel" placeholder="+91 98200 00000">
+                <p class="err" data-ok="">Include the country code.</p>
+                <p class="hint">Masked from restaurants until a deal is accepted.</p>
+              </div>
+            </div>
+
+            <div class="ob-nav mt-6">
+              <span class="hint">Step 1 of 3</span>
+              <button class="btn btn-primary" type="button" data-step-next>
+                Continue
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <!-- step 2 -->
+        <section class="ob-card pane" data-pane>
+          <div>
+            <h2 class="ob-h">Connect your work</h2>
+            <p class="ob-p mt-6">Handles stay masked from restaurants. They unlock only when a deal is
+              accepted, so nothing is exposed while you are still comparing campaigns.</p>
+          </div>
+
+          <form data-form data-reset data-success="Handles saved." novalidate>
+            <div class="form-sum" data-form-summary role="alert"></div>
+
+            <div class="handles">
+              <div class="field">
+                <label class="label label-req" for="h-insta">Instagram handle</label>
+                <div class="handle-row">
+                  <span class="handle-net">Instagram</span>
+                  <input class="input" id="h-insta" name="insta" type="text" required placeholder="@yourhandle" data-match="^@?[A-Za-z0-9._]{3,30}$">
+                  <span class="tag handle-lock">Masked</span>
+                </div>
+                <p class="err" data-ok="">Handles only, without a link.</p>
+              </div>
+
+              <div class="field">
+                <label class="label" for="h-yt">YouTube channel</label>
+                <div class="handle-row">
+                  <span class="handle-net">YouTube</span>
+                  <input class="input" id="h-yt" name="yt" type="text" placeholder="@yourchannel" data-match="^@?[A-Za-z0-9._-]{3,40}$">
+                  <span class="tag handle-lock">Masked</span>
+                </div>
+                <p class="err" data-ok="">Optional, but it helps for event coverage.</p>
+              </div>
+
+              <div class="field">
+                <label class="label" for="h-site">Portfolio link</label>
+                <div class="handle-row">
+                  <span class="handle-net">Website</span>
+                  <input class="input" id="h-site" name="site" type="url" placeholder="https://yourwork.com">
+                  <span class="tag handle-lock">Masked</span>
+                </div>
+                <p class="err" data-ok="">Include https:// and the full domain.</p>
+              </div>
+            </div>
+
+            <div class="field mt-6">
+              <label class="label" for="h-work">Recent work you want restaurants to see</label>
+              <textarea class="textarea" id="h-work" name="work" required
+                        placeholder="Name two or three pieces and what made them work for a restaurant."></textarea>
+              <p class="err" data-ok="">Link-free descriptions are fine. The point is the work, not the reach.</p>
+            </div>
+
+            <div class="ob-cols mt-6">
+              <div class="field">
+                <label class="label label-req" for="h-style">Primary output</label>
+                <select class="select" id="h-style" name="style" required>
+                  <option value="">Select a format</option>
+                  <option selected>Reels &amp; short video</option>
+                  <option>Feed photography</option>
+                  <option>Long-form video</option>
+                  <option>Mixed</option>
+                </select>
+                <p class="err" data-ok="">Restaurants filter creators by format.</p>
+              </div>
+              <div class="field">
+                <label class="label" for="h-gear">Kit you bring</label>
+                <input class="input" id="h-gear" name="gear" type="text" placeholder="Phone, gimbal, 2 lights">
+                <p class="hint">Optional. Shoot-day clarity reduces back-and-forth.</p>
+              </div>
+            </div>
+
+            <div class="ob-nav mt-6">
+              <button class="btn btn-ghost" type="button" data-step-back>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="transform:rotate(180deg)"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                Back
+              </button>
+              <button class="btn btn-primary" type="button" data-step-next>
+                Continue
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <!-- step 3 -->
+        <section class="ob-card pane" data-pane>
+          <div>
+            <h2 class="ob-h">Your rate card</h2>
+            <p class="ob-p mt-6">Set a floor and a ceiling. You only ever apply to campaigns whose published
+              range overlaps, so the number you set decides what lands in front of you.</p>
+          </div>
+
+          <div class="hair hair-2">
+            <div>
+              <span class="amt-k">Matching example</span>
+              <span class="amount amount-gold od-nowrap">₹20K–₹50K</span>
+            </div>
+            <div>
+              <span class="amt-k">Net payout after a ₹2,000 platform fee</span>
+              <span class="amount od-nowrap">₹18,000</span>
+            </div>
+          </div>
+
+          <form data-form data-reset data-success="Rate card saved." novalidate>
+            <div class="form-sum" data-form-summary role="alert"></div>
+
+            <div class="ob-cols">
+              <div class="field">
+                <label class="label label-req" for="r-min">Minimum rate (₹)</label>
+                <input class="input" id="r-min" name="rmin" type="number" min="1000" step="500" required value="20000" inputmode="numeric">
+                <p class="err" data-ok="">Enter a number at or above ₹1,000.</p>
+              </div>
+              <div class="field">
+                <label class="label label-req" for="r-max">Maximum rate (₹)</label>
+                <input class="input" id="r-max" name="rmax" type="number" min="2000" step="500" required value="50000" inputmode="numeric">
+                <p class="err" data-ok="">Enter a number at or above ₹2,000.</p>
+              </div>
+            </div>
+
+            <div class="field mt-6">
+              <span class="label">Per deliverable</span>
+              <div class="row-wrap" role="group" aria-label="Deliverable pricing" data-chipgroup="multi">
+                <button class="chip" type="button" aria-pressed="true">Reel</button>
+                <button class="chip" type="button" aria-pressed="true">Story set</button>
+                <button class="chip" type="button" aria-pressed="false">Feed post</button>
+                <button class="chip" type="button" aria-pressed="false">Half-day shoot</button>
+                <button class="chip" type="button" aria-pressed="false">Full-day shoot</button>
+              </div>
+              <p class="hint">Fixed scope beats hourly pricing — it keeps negotiation short.</p>
+            </div>
+
+            <div class="ob-cols mt-6">
+              <div class="field">
+                <label class="label label-req" for="r-lead">Notice you need for a shoot day</label>
+                <select class="select" id="r-lead" name="lead" required>
+                  <option value="">Select a notice period</option>
+                  <option selected>3–5 days</option>
+                  <option>About a week</option>
+                  <option>Two weeks</option>
+                </select>
+                <p class="err" data-ok="">Restaurants plan shoot dates around this.</p>
+              </div>
+              <div class="field">
+                <label class="label" for="r-travel">Travel you accept</label>
+                <input class="input" id="r-travel" name="travel" type="text" placeholder="Within Mumbai">
+                <p class="hint">Optional, but it sets expectations early.</p>
+              </div>
+            </div>
+
+            <label class="check mt-6">
+              <input type="checkbox" name="terms" required>
+              <span class="check-box" aria-hidden="true"></span>
+              <span>I accept the campaign terms and understand payment is released after delivery is approved.</span>
+            </label>
+
+            <div class="ob-nav mt-6">
+              <button class="btn btn-ghost" type="button" data-step-back>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="transform:rotate(180deg)"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                Back
+              </button>
+              <div class="row-wrap">
+                <a class="btn btn-quiet" href="influencer-dashboard.html">Skip to dashboard</a>
+                <button class="btn btn-primary" type="submit">Save rate card</button>
+              </div>
+            </div>
+          </form>
+        </section>
+      </div>
+
+      <aside class="stack stack-4" aria-label="What happens next">
+        <div class="panel">
+          <span class="eyebrow">After onboarding</span>
+          <div class="list-row" style="border:0;padding-block:var(--s3)">
+            <span class="avatar avatar-sm avatar-gold">1</span>
+            <span class="list-main">
+              <span class="list-t">Match campaigns</span>
+              <span class="list-s">Based on your niches, city, and rate range.</span>
+            </span>
+          </div>
+          <div class="list-row" style="padding-block:var(--s3)">
+            <span class="avatar avatar-sm avatar-gold">2</span>
+            <span class="list-main">
+              <span class="list-t">Apply with your rate</span>
+              <span class="list-s">Your number stays inside the published range.</span>
+            </span>
+          </div>
+          <div class="list-row" style="padding-block:var(--s3)">
+            <span class="avatar avatar-sm avatar-gold">3</span>
+            <span class="list-main">
+              <span class="list-t">Negotiate and contract</span>
+              <span class="list-s">Counter-offers happen in the deal room.</span>
+            </span>
+          </div>
+          <div class="list-row" style="border-bottom:0;padding-block:var(--s3)">
+            <span class="avatar avatar-sm avatar-gold">4</span>
+            <span class="list-main">
+              <span class="list-t">Deliver and get paid</span>
+              <span class="list-s">Escrow releases on approval.</span>
+            </span>
+          </div>
+          <a class="btn btn-ghost btn-block mt-6" href="influencer-dashboard.html">See the creator dashboard</a>
+        </div>
+
+        <div class="panel">
+          <div class="lockbar">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10.5" width="16" height="10" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg>
+            <span>Your handles, phone, and email are masked from restaurants until a deal is accepted.</span>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer-btm">
+      <span>CollabTable prototype — creator onboarding.</span>
+      <span>All amounts in Indian rupees (₹).</span>
+    </div>
+  </div>
+</footer>
+
+<div class="scrim" data-scrim></div>
+<script src="assets/app.js"></script>
+</body>
+</html>

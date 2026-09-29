@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Restaurant dashboard — CollabTable</title>
+<meta name="description" content="Restaurant dashboard: live campaigns, applications, budget committed, and escrow.">
+<meta name="theme-color" content="#FE002A">
+<style>
+/* OD-LAYOUT-PRIMITIVES v1 — structure only: display, flex/grid, overflow, wrapping, ratio.
+   Put this @layer first; product CSS outside the layer always wins. */
+@layer od-layout {
+  :where(.od-stack,.od-row,.od-row-top,.od-cluster,.od-grid,.od-field,.od-stat,.od-cell,.od-tile) > :where(*) { min-width: 0; }
+
+  /* containers */
+  .od-stack   { display: flex; flex-direction: column; gap: var(--od-gap, 8px); }
+  .od-row     { display: flex; align-items: center; gap: var(--od-gap, 8px); }
+  .od-row-top { display: flex; align-items: flex-start; gap: var(--od-gap, 8px); }
+  .od-cluster { display: flex; flex-wrap: wrap; align-items: center; gap: var(--od-gap, 8px); }
+  .od-fill    { flex: 1 1 0; min-width: 0; }
+  .od-fixed   { flex: none; }
+  .od-grid    { display: grid; gap: var(--od-gap, 12px); grid-template-columns: repeat(var(--od-cols, 3), minmax(0, 1fr)); }
+
+  /* stacked information: each piece is its own line — never sibling inline spans */
+  .od-stat, .od-field, .od-cell { display: grid; gap: var(--od-gap, 2px); }
+  :where(.od-stat,.od-field,.od-cell) > :where(*) { display: block; }
+  .od-tile { display: grid; grid-template-rows: auto 1fr; }
+  :where(.od-tile) > :where(*) { display: block; }
+
+  /* media keeps its intrinsic ratio by default; never a distorted or cropped
+     cover by accident. height:auto lets the ratio win over an <img height="…">
+     attribute. Cropping to a uniform box is an explicit opt-in: set --od-ratio
+     AND add .od-media-cover together (per the core rule, only where a crop is
+     deliberate — tile thumbs, decorative fills — never on full-frame content). */
+  .od-media { display: block; width: 100%; height: auto; aspect-ratio: var(--od-ratio, auto); }
+  .od-media-cover { object-fit: cover; }
+
+  /* data text only — authored copy is rewritten to its budget instead */
+  .od-truncate { display: block; max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .od-clamp-2, .od-clamp-3 { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+  .od-clamp-2 { -webkit-line-clamp: 2; }
+  .od-clamp-3 { -webkit-line-clamp: 3; }
+  .od-lines-2 { min-height: calc(2 * 1.4em); }   /* block-level reservation for a shared baseline */
+  .od-nowrap  { white-space: nowrap; }           /* 数字+单位 · 价格+起 · 日期+星期 */
+  .od-keep    { word-break: keep-all; overflow-wrap: anywhere; } /* CJK labels break at spaces / <wbr> first */
+
+  /* screen skeleton (optional): bars take their own space, the middle scrolls — no padding guessed for chrome */
+  .od-screen { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; height: 100%; }
+  .od-scroll { overflow-y: auto; overscroll-behavior: contain; min-height: 0; }
+
+  /* horizontal rail: the next item peeks at the edge; trailing room survives overflow */
+  .od-rail { display: flex; gap: var(--od-gap, 8px); overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none;
+             padding-inline: var(--od-rail-pad, 16px); scroll-padding-inline: var(--od-rail-pad, 16px); }
+  .od-rail::-webkit-scrollbar { display: none; }
+  :where(.od-rail) > :where(*) { flex: none; scroll-snap-align: start; }
+  :where(.od-rail) > :where(:last-child) { margin-inline-end: var(--od-rail-pad, 16px); }
+
+  .od-spacer { flex: none; visibility: hidden; pointer-events: none; }
+  .od-touch  { min-width: 44px; min-height: 44px; }
+}
+/* /OD-LAYOUT-PRIMITIVES v1 */
+</style>
+<link rel="stylesheet" href="assets/theme.css">
+<style>
+  .dash { display: grid; gap: var(--s6); padding-top: var(--s7); padding-bottom: var(--s9); }
+  .dash-main { display: grid; gap: var(--s6); }
+  .topbar { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--s4); }
+  .cam-card { display: grid; grid-template-columns: 1fr; gap: var(--s4); padding: var(--s5); background: var(--surface); border: 1px solid var(--line-10); border-radius: var(--r-lg); }
+  .cam-live { border-color: var(--primary-40); }
+  .cam-t { display: block; font-size: var(--f-2xl); font-weight: 500; color: var(--fg); }
+  .cam-s { display: block; margin-top: var(--s2); font-size: var(--f-sm); color: var(--muted-fg); }
+  .cam-meta { display: flex; flex-wrap: wrap; gap: var(--s4) var(--s5); margin-top: var(--s4); }
+  .cam-mt { display: grid; gap: var(--s1); }
+  .cam-mk { display: block; font-size: var(--f-xs); color: var(--muted-fg); }
+  .cam-mv { display: block; font-size: var(--f-sm); color: var(--fg); }
+  .cam-acts { display: flex; flex-wrap: wrap; gap: var(--s2); margin-top: var(--s5); }
+  .appl { display: grid; gap: var(--s3); padding: var(--s4) 0; border-bottom: 1px solid var(--line-05); }
+  .appl:last-child { border-bottom: 0; }
+  .appl-top { display: flex; align-items: center; gap: var(--s3); }
+  .appl-t { display: block; color: var(--fg); font-weight: 500; }
+  .appl-s { display: block; margin-top: 2px; font-size: var(--f-xs); color: var(--muted-fg); }
+  .appl-rate { margin-left: auto; text-align: right; }
+  .appl-rv { display: block; color: var(--fg); font-weight: 500; }
+  .appl-acts { display: flex; flex-wrap: wrap; gap: var(--s2); }
+  .side-stack { display: grid; gap: var(--s4); align-content: start; }
+  .esc-row { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s3); padding-block: var(--s3); border-bottom: 1px solid var(--line-05); }
+  .esc-row:last-child { border-bottom: 0; }
+  .esc-k { display: block; font-size: var(--f-xs); color: var(--muted-fg); }
+  .esc-v { display: block; font-size: var(--f-sm); color: var(--fg); }
+  .todo { display: flex; align-items: flex-start; gap: var(--s3); padding-block: var(--s3); }
+  .todo-t { display: block; color: var(--fg); font-weight: 500; }
+  .todo-s { display: block; margin-top: 2px; font-size: var(--f-xs); color: var(--muted-fg); }
+  @media (min-width: 1024px) { .cam-card { grid-template-columns: minmax(0, 1fr) 220px; align-items: start; } }
+  @media (min-width: 1200px) { .dash { grid-template-columns: minmax(0, 1fr) 340px; align-items: start; } }
+</style>
+</head>
+<body>
+<div class="bloom" aria-hidden="true"></div>
+
+<header class="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="index.html" aria-label="CollabTable home">
+      <span class="brand-a">COLLAB</span><span class="brand-b">TABLE</span>
+    </a>
+    <nav class="nav-links" aria-label="Primary">
+      <a class="nav-link" href="landing.html">Overview</a>
+      <a class="nav-link" href="discover-creators.html" aria-current="page">For restaurants</a>
+      <a class="nav-link" href="discover-restaurants.html">For creators</a>
+    </nav>
+    <div class="nav-actions">
+      <a class="btn btn-quiet" href="index.html">All screens</a>
+      <a class="btn btn-primary" href="restaurant-onboarding.html">Post a campaign</a>
+      <button class="burger" type="button" data-burger aria-expanded="false" aria-controls="mnav" aria-label="Open menu">
+        <span></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="mnav" id="mnav" data-mnav aria-hidden="true">
+  <a class="mnav-link" href="index.html">All screens</a>
+  <a class="mnav-link" href="landing.html">Overview</a>
+  <a class="mnav-link" href="restaurant-dashboard.html" aria-current="page">Restaurant dashboard</a>
+  <a class="mnav-link" href="restaurant-onboarding.html">Restaurant onboarding</a>
+  <a class="mnav-link" href="discover-creators.html">Discover creators</a>
+  <a class="mnav-link" href="campaign-detail.html">Campaign detail</a>
+</div>
+
+<main class="page">
+  <div class="wrap">
+    <div class="dash">
+
+      <!-- ------------------------------------------------ main column -->
+      <div class="dash-main">
+
+        <div class="topbar">
+          <div>
+            <span class="eyebrow eyebrow-red">Sakura House · Mumbai</span>
+            <h1 class="h2">Restaurant dashboard</h1>
+            <p class="lede mt-6">One campaign needs your attention. Everything else is already moving.</p>
+          </div>
+          <div class="row-wrap">
+            <a class="btn btn-ghost" href="discover-creators.html">Browse creators</a>
+            <a class="btn btn-primary" href="restaurant-onboarding.html">Post a campaign</a>
+          </div>
+        </div>
+
+        <div class="hair hair-4">
+          <div>
+            <span class="stat-n">1</span>
+            <span class="stat-c">Live campaign</span>
+          </div>
+          <div>
+            <span class="stat-n">3</span>
+            <span class="stat-c">Applications to review</span>
+          </div>
+          <div>
+            <span class="stat-n stat-n-red">₹20,000</span>
+            <span class="stat-c">In escrow</span>
+          </div>
+          <div>
+            <span class="stat-n">₹2,000</span>
+            <span class="stat-c">Platform fee at this escrow</span>
+          </div>
+        </div>
+
+        <!-- live campaign -->
+        <section class="card cam-card cam-live" aria-labelledby="cam1-t">
+          <div>
+            <div class="row-wrap">
+              <span class="tag tag-live">Applications open</span>
+              <span class="tag">Deadline: Sep 15</span>
+              <span class="tag">Shoot 12–14 Sep</span>
+            </div>
+            <h2 class="cam-t mt-6" id="cam1-t">Weekend Japanese Experience</h2>
+            <p class="cam-s">Launch campaign for the new tasting menu. Reels and story set, shot across
+              two weekend services.</p>
+
+            <div class="cam-meta">
+              <span class="cam-mt">
+                <span class="cam-mk">Budget range</span>
+                <span class="cam-mv od-nowrap">₹20K–₹50K</span>
+              </span>
+              <span class="cam-mt">
+                <span class="cam-mk">Cuisine</span>
+                <span class="cam-mv">Japanese</span>
+              </span>
+              <span class="cam-mt">
+                <span class="cam-mk">City</span>
+                <span class="cam-mv">Mumbai</span>
+              </span>
+              <span class="cam-mt">
+                <span class="cam-mk">Deal status</span>
+                <span class="cam-mv">Offer accepted · contract pending</span>
+              </span>
+            </div>
+
+            <div class="cam-acts">
+              <a class="btn btn-primary btn-sm" href="campaign-detail.html">Review applications</a>
+              <button class="btn btn-ghost btn-sm" type="button" data-sheet="deal-room">Open deal room</button>
+            </div>
+          </div>
+
+          <div>
+            <span class="amt-k">Budget committed</span>
+            <span class="amount od-nowrap">₹20,000</span>
+            <div class="meter mt-6">
+              <span style="width:40%"></span>
+            </div>
+            <p class="hint mt-6">40% of the ₹50,000 ceiling, at the bottom of your published range.</p>
+            <div class="esc-row mt-6">
+              <span class="esc-k">Escrow</span>
+              <span class="esc-v od-nowrap">₹20,000</span>
+            </div>
+            <div class="esc-row">
+              <span class="esc-k">Platform fee</span>
+              <span class="esc-v od-nowrap">₹2,000</span>
+            </div>
+            <div class="esc-row">
+              <span class="esc-k">Creator receives</span>
+              <span class="esc-v od-nowrap">₹18,000</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- applications -->
+        <section class="panel" aria-labelledby="appl-t">
+          <div class="between" style="flex-wrap:wrap">
+            <div>
+              <span class="eyebrow">Weekend Japanese Experience</span>
+              <h2 class="h3" id="appl-t">Applications</h2>
+            </div>
+            <span class="tag tag-red">3 to review</span>
+          </div>
+
+          <div class="mt-6">
+            <article class="appl">
+              <div class="appl-top">
+                <span class="avatar">A</span>
+                <span style="min-width:0">
+                  <span class="appl-t">Creator Ananya</span>
+                  <span class="appl-s">Japanese · Mumbai · Reels and story set</span>
+                </span>
+                <span class="appl-rate">
+                  <span class="appl-rv od-nowrap">₹20,000</span>
+                  <span class="appl-s">Inside your range</span>
+                </span>
+              </div>
+              <p class="appl-s" style="margin:0">
+                Applied with a fixed scope: two reels and a story set, shot across the 12th and 13th.
+                Available on both services.
+              </p>
+              <div class="appl-acts">
+                <button class="btn btn-primary btn-sm" type="button" data-sheet="deal-room">Open deal room</button>
+                <button class="btn btn-ghost btn-sm" type="button" data-blocked-contact="Her contact details">Ask via deal room</button>
+                <button class="btn btn-quiet btn-sm" type="button" data-blocked-contact="Her phone number">View contact</button>
+              </div>
+            </article>
+
+            <article class="appl">
+              <div class="appl-top">
+                <span class="avatar avatar-line">R</span>
+                <span style="min-width:0">
+                  <span class="appl-t">Rahul V.</span>
+                  <span class="appl-s">Japanese · Mumbai · Reels and feed post</span>
+                </span>
+                <span class="appl-rate">
+                  <span class="appl-rv od-nowrap">₹32,000</span>
+                  <span class="appl-s">Inside your range</span>
+                </span>
+              </div>
+              <p class="appl-s" style="margin:0">
+                Proposed a reel, a feed post, and a menu shoot on the 14th. Wants to bundle a
+                second campaign into the same visit.
+              </p>
+              <div class="appl-acts">
+                <button class="btn btn-ghost btn-sm" type="button" data-sheet="appl-rahul">Review application</button>
+                <button class="btn btn-quiet btn-sm" type="button" data-blocked-contact="His contact details">View contact</button>
+              </div>
+            </article>
+
+            <article class="appl">
+              <div class="appl-top">
+                <span class="avatar avatar-line">S</span>
+                <span style="min-width:0">
+                  <span class="appl-t">Sana M.</span>
+                  <span class="appl-s">Desserts · Mumbai · Reels</span>
+                </span>
+                <span class="appl-rate">
+                  <span class="appl-rv od-nowrap">₹45,000</span>
+                  <span class="appl-s">Top of your range</span>
+                </span>
+              </div>
+              <p class="appl-s" style="margin:0">
+                Applied to cover the dessert menu separately from the tasting menu. Stronger fit if you
+                split the brief into two campaigns.
+              </p>
+              <div class="appl-acts">
+                <button class="btn btn-ghost btn-sm" type="button" data-sheet="appl-sana">Review application</button>
+                <button class="btn btn-quiet btn-sm" type="button" data-blocked-contact="Her contact details">View contact</button>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <!-- past campaigns -->
+        <section class="panel" aria-labelledby="past-t">
+          <span class="eyebrow">History</span>
+          <h2 class="h3" id="past-t">Previous campaigns</h2>
+          <div class="list-row">
+            <span class="avatar avatar-sm avatar-line">1</span>
+            <span class="list-main">
+              <span class="list-t">Monsoon Menu Launch</span>
+              <span class="list-s">Delivered · Released to the creator</span>
+            </span>
+            <button class="btn btn-quiet btn-sm" type="button" data-sheet="deal-room">Deal room</button>
+          </div>
+          <div class="list-row">
+            <span class="avatar avatar-sm avatar-line">2</span>
+            <span class="list-main">
+              <span class="list-t">Chef's Table Series</span>
+              <span class="list-s">Delivered · Released to the creator</span>
+            </span>
+            <button class="btn btn-quiet btn-sm" type="button" data-sheet="deal-room">Deal room</button>
+          </div>
+        </section>
+      </div>
+
+      <!-- -------------------------------------------------- side column -->
+      <div class="side-stack">
+        <div class="panel">
+          <div class="between">
+            <div>
+              <span class="eyebrow">Escrow</span>
+              <h2 class="h3">₹20,000</h2>
+            </div>
+            <span class="well well-gold" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18"/></svg>
+            </span>
+          </div>
+          <div class="esc-row">
+            <span class="esc-k">Funded</span>
+            <span class="esc-v od-nowrap">₹20,000</span>
+          </div>
+          <div class="esc-row">
+            <span class="esc-k">Platform fee</span>
+            <span class="esc-v od-nowrap">− ₹2,000</span>
+          </div>
+          <div class="esc-row">
+            <span class="esc-k">Net to creator</span>
+            <span class="esc-v od-nowrap">₹18,000</span>
+          </div>
+          <div class="lockbar mt-6">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10.5" width="16" height="10" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg>
+            <span>Release requires your approval of the delivered content in the deal room.</span>
+          </div>
+        </div>
+
+        <div class="panel">
+          <span class="eyebrow">Next actions</span>
+          <div class="todo">
+            <span class="bullet" aria-hidden="true"></span>
+            <span style="min-width:0">
+              <span class="todo-t">Accept the contract</span>
+              <span class="todo-s">Creator Ananya accepted the offer. Both signatures release the deal.</span>
+            </span>
+          </div>
+          <div class="todo">
+            <span class="bullet" aria-hidden="true"></span>
+            <span style="min-width:0">
+              <span class="todo-t">Shortlist two more creators</span>
+              <span class="todo-s">Applications close Sep 15.</span>
+            </span>
+          </div>
+          <div class="todo">
+            <span class="bullet" aria-hidden="true"></span>
+            <span style="min-width:0">
+              <span class="todo-t">Confirm shoot dates</span>
+              <span class="todo-s">12–14 Sep, two weekend services.</span>
+            </span>
+          </div>
+          <a class="btn btn-ghost btn-block mt-6" href="campaign-detail.html">Open the campaign</a>
+        </div>
+
+        <div class="panel">
+          <span class="eyebrow">Shortlisted</span>
+          <div class="list-row" style="border-top:0">
+            <span class="avatar avatar-sm">A</span>
+            <span class="list-main">
+              <span class="list-t">Creator Ananya</span>
+              <span class="list-s">Offer accepted</span>
+            </span>
+          </div>
+          <div class="list-row">
+            <span class="avatar avatar-sm avatar-line">R</span>
+            <span class="list-main">
+              <span class="list-t">Rahul V.</span>
+              <span class="list-s">Shortlisted</span>
+            </span>
+          </div>
+          <div class="list-row">
+            <span class="avatar avatar-sm avatar-line">S</span>
+            <span class="list-main">
+              <span class="list-t">Sana M.</span>
+              <span class="list-s">Shortlisted</span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer-btm">
+      <span>CollabTable prototype — restaurant dashboard.</span>
+      <span>All amounts in Indian rupees (₹).</span>
+    </div>
+  </div>
+</footer>
+
+<!-- =========================================================== sheets -->
+<div class="sheet" id="appl-rahul" role="dialog" aria-modal="true" aria-labelledby="appl-rahul-t" aria-hidden="true">
+  <div class="sheet-grab" aria-hidden="true"></div>
+  <div class="sheet-head">
+    <div>
+      <h2 class="h4" id="appl-rahul-t">Rahul V. — application</h2>
+      <p class="appl-s">Japanese · Mumbai · Applied within your range</p>
+    </div>
+    <button class="sheet-x" type="button" data-sheet-close aria-label="Close">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+
+  <div class="hair hair-2">
+    <div>
+      <span class="amt-k">Asked for</span>
+      <span class="amount od-nowrap">₹32,000</span>
+    </div>
+    <div>
+      <span class="amt-k">Your range</span>
+      <span class="amount amount-gold od-nowrap">₹20K–₹50K</span>
+    </div>
+  </div>
+
+  <p class="appl-s mt-6" style="margin:0">
+    Proposes a reel, a feed post, and a menu shoot on the 14th, and asks to bundle a second campaign
+    into the same visit to reach a better rate.
+  </p>
+
+  <div class="lockbar mt-6">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10.5" width="16" height="10" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg>
+    <span data-blocked-contact="Contact details stay hidden">Contact details unlock only after a deal is accepted.</span>
+  </div>
+
+  <div class="row-wrap mt-6">
+    <button class="btn btn-primary" type="button" data-sheet="deal-room">Start negotiation</button>
+    <button class="btn btn-ghost" type="button" data-sheet="deal-room">Send a counter-offer</button>
+    <button class="btn btn-quiet" type="button" data-sheet-close>Close</button>
+  </div>
+</div>
+
+<div class="sheet" id="appl-sana" role="dialog" aria-modal="true" aria-labelledby="appl-sana-t" aria-hidden="true">
+  <div class="sheet-grab" aria-hidden="true"></div>
+  <div class="sheet-head">
+    <div>
+      <h2 class="h4" id="appl-sana-t">Sana M. — application</h2>
+      <p class="appl-s">Desserts · Mumbai · Applied at the top of your range</p>
+    </div>
+    <button class="sheet-x" type="button" data-sheet-close aria-label="Close">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+
+  <div class="hair hair-2">
+    <div>
+      <span class="amt-k">Asked for</span>
+      <span class="amount od-nowrap">₹45,000</span>
+    </div>
+    <div>
+      <span class="amt-k">Your range</span>
+      <span class="amount amount-gold od-nowrap">₹20K–₹50K</span>
+    </div>
+  </div>
+
+  <p class="appl-s mt-6" style="margin:0">
+    Wants to cover the dessert menu as a separate shoot rather than inside the tasting-menu brief.
+    A better fit if you split the campaign in two.
+  </p>
+
+  <div class="row-wrap mt-6">
+    <button class="btn btn-primary" type="button" data-sheet="deal-room">Start negotiation</button>
+    <button class="btn btn-ghost" type="button" data-sheet-close>Close</button>
+  </div>
+</div>
+
+<!-- ====================================================== deal room pop-up -->
+<!-- One centred pop-up, not a screen. The restaurant and the creator open the
+     same room from any surface, and data-deal-role decides which side of the
+     deal you are looking at. The order is the real one: negotiate, finalise
+     the contract, then pay. Until the creator has been paid, neither side
+     sees the other's name, phone number, email, or handle. -->
+<div class="sheet sheet-deal" id="deal-room" role="dialog" aria-modal="true" tabindex="-1"
+     aria-labelledby="dr-t" aria-describedby="dr-s" aria-hidden="true"
+     data-deal data-stage="offer" data-fee="20000" data-deal-role="restaurant">
+
+  <div class="sheet-head">
+    <div>
+      <span class="eyebrow eyebrow-red">Deal room</span>
+      <h2 class="h4" id="dr-t">Weekend Japanese Experience</h2>
+      <p class="dr-s" id="dr-s">Mumbai · shoot 12–14 Sep · ₹20,000–₹50,000 range. One thread, and it stays here.</p>
+    </div>
+    <button class="sheet-x" type="button" data-sheet-close aria-label="Close deal room">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+
+  <div class="dr-parties">
+    <div class="dr-party" data-you="true">
+      <span class="dr-av" aria-hidden="true">R</span>
+      <span class="dr-party-b">
+        <span class="dr-party-t">Restaurant</span>
+        <span class="dr-party-s">Buyer · Bandra West</span>
+      </span>
+      <span class="tag tag-red dr-you">You</span>
+    </div>
+    <div class="dr-party" data-you="false">
+      <span class="dr-av" aria-hidden="true">C</span>
+      <span class="dr-party-b">
+        <span class="dr-party-t">Creator</span>
+        <span class="dr-party-s">Food creator · Mumbai</span>
+      </span>
+      
+    </div>
+  </div>
+
+  <div class="dr-steps" role="group" aria-label="Deal progress">
+    <span class="dr-step" data-deal-step="offer"><span class="dr-step-n">1</span><span>Negotiate</span></span>
+    <span class="dr-step" data-deal-step="contract"><span class="dr-step-n">2</span><span>Contract</span></span>
+    <span class="dr-step" data-deal-step="payment"><span class="dr-step-n">3</span><span>Payment</span></span>
+  </div>
+  <p class="hint" data-deal-live role="status" aria-live="polite">Stage 1 of 3: Negotiate.</p>
+
+  <div class="dr-cols mt-5">
+    <div class="dr-stack">
+
+      <!-- ------------------------------------------- stage 1 · negotiate -->
+      <section class="stage-panel" data-deal-stage="offer" aria-labelledby="dr-offer">
+        <div>
+          <span class="eyebrow">Stage 1 · Negotiate</span>
+          <h3 class="h3" id="dr-offer" data-deal-title>Agree the scope and the fee</h3>
+        </div>
+
+        <div class="stage-note">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+          <span>Either of you can move the number, and every counter sits in the same thread. The published range for this campaign is ₹20,000–₹50,000, so anything inside it is a fair start.</span>
+        </div>
+
+        <div>
+          <p class="dr-sub">Offers</p>
+          <ol class="offers mt-4" data-deal-thread>
+            <li class="offer" data-side="them">
+              <div class="offer-hd"><span class="offer-who">The creator</span><span class="offer-when">2 hours ago</span></div>
+              <p class="offer-amt">₹20,000</p>
+              <p class="offer-note">Two reels plus a three-story set, shot 12–14 Sep at the Bandra kitchen. Organic usage on your own channels for 90 days.</p>
+            </li>
+          </ol>
+        </div>
+
+        <form class="counter" data-form data-reset data-deal-counter data-success="Counter-offer sent. The other side can accept it or move it again.">
+          <p class="dr-sub">Send a counter-offer</p>
+          <div class="counter-row">
+            <div class="field">
+              <label class="label" for="dr-amount">Your fee</label>
+              <input class="input" id="dr-amount" name="dr-amount" type="number" inputmode="numeric"
+                     min="20000" max="50000" step="500" value="20000" required>
+              <span class="err">Enter a fee between ₹20,000 and ₹50,000.</span>
+            </div>
+            <div class="field field-wide">
+              <label class="label" for="dr-note">What you are changing (optional)</label>
+              <textarea class="textarea" id="dr-note" name="dr-note" rows="2"
+                        placeholder="Add a reel, move the shoot date, ask for longer usage"></textarea>
+            </div>
+          </div>
+          <div class="act">
+            <button class="btn btn-primary" type="submit">Send counter-offer</button>
+            <span class="hint">Nobody is committed until you both accept.</span>
+          </div>
+        </form>
+
+        <div class="act">
+          <button class="btn btn-primary" type="button" data-deal-accept>Accept <span data-deal-amount>₹20,000</span> and finalise</button>
+          <button class="btn btn-white" type="button" data-deal-contract hidden>Open the contract</button>
+        </div>
+      </section>
+
+      <!-- ------------------------------------------- stage 2 · contract -->
+      <section class="stage-panel" data-deal-stage="contract" aria-labelledby="dr-contract" hidden>
+        <div>
+          <span class="eyebrow">Stage 2 · Contract</span>
+          <h3 class="h3" id="dr-contract" data-deal-title>The deal, written down</h3>
+        </div>
+
+        <div class="stage-note stage-note-gold">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>
+          <span>Finalised at <strong data-deal-amount>₹20,000</strong>. Both parties sign below before payment opens, and nothing about either party is revealed until the money moves.</span>
+        </div>
+
+        <div>
+          <p class="dr-sub">What is agreed</p>
+          <div class="agree mt-4">
+            <div class="agree-item"><span class="agree-k">Deliverables</span><span class="agree-v">2 reels + 3 stories</span></div>
+            <div class="agree-item"><span class="agree-k">Shoot window</span><span class="agree-v">12–14 Sep</span></div>
+            <div class="agree-item"><span class="agree-k">Location</span><span class="agree-v">Bandra West, Mumbai</span></div>
+            <div class="agree-item"><span class="agree-k">Usage rights</span><span class="agree-v">Organic, 90 days</span></div>
+            <div class="agree-item"><span class="agree-k">Platform fee</span><span class="agree-v"><span data-deal-fee>₹2,000</span> · 10%</span></div>
+            <div class="agree-item"><span class="agree-k">Creator payout</span><span class="agree-v"><span data-deal-payout>₹18,000</span></span></div>
+            <div class="agree-item"><span class="agree-k">Payment terms</span><span class="agree-v">Escrow on signing, released on delivery</span></div>
+            <div class="agree-item"><span class="agree-k">Cancellation</span><span class="agree-v">Free up to 7 days before the shoot</span></div>
+          </div>
+        </div>
+
+        <div>
+          <p class="dr-sub">Signatures</p>
+          <div class="sign mt-4">
+            <div class="sign-row" data-deal-sign-row="restaurant" data-signed="true">
+              <span class="sign-who">
+                <span class="sign-t">Restaurant</span>
+                <span class="sign-s">Signed inside CollabTable</span>
+              </span>
+              <span class="tag tag-red" data-deal-sign-tag>Signed</span>
+            </div>
+            <div class="sign-row" data-deal-sign-row="creator" data-signed="false">
+              <span class="sign-who">
+                <span class="sign-t">Creator</span>
+                <span class="sign-s">Signed inside CollabTable</span>
+              </span>
+              <span class="tag" data-deal-sign-tag>Needs your signature</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="act">
+          <button class="btn btn-primary" type="button" data-deal-sign>Sign the contract</button>
+          <button class="btn btn-white" type="button" data-deal-next>Go to payment</button>
+          <button class="btn btn-ghost" type="button" data-deal-back>Back to negotiate</button>
+        </div>
+      </section>
+
+      <!-- ------------------------------------------- stage 3 · payment -->
+      <section class="stage-panel" data-deal-stage="payment" aria-labelledby="dr-payment" hidden>
+        <div>
+          <span class="eyebrow">Stage 3 · Payment</span>
+          <h3 class="h3" id="dr-payment" data-deal-title>Move the money</h3>
+        </div>
+
+        <div>
+          <p class="dr-sub">Payment option</p>
+          <div class="pay-list mt-4">
+            <label class="pay" data-on="true">
+              <input type="radio" name="dr-method" value="upi" data-deal-method checked>
+              <span class="pay-dot" aria-hidden="true"></span>
+              <span class="pay-body">
+                <span class="pay-t">UPI</span>
+                <span class="pay-s">Instant · no surcharge</span>
+              </span>
+              <span class="tag tag-live pay-flag">Fastest</span>
+            </label>
+            <label class="pay">
+              <input type="radio" name="dr-method" value="net" data-deal-method>
+              <span class="pay-dot" aria-hidden="true"></span>
+              <span class="pay-body">
+                <span class="pay-t">Net banking</span>
+                <span class="pay-s">Any Indian bank · settles next working day</span>
+              </span>
+            </label>
+            <label class="pay">
+              <input type="radio" name="dr-method" value="card" data-deal-method>
+              <span class="pay-dot" aria-hidden="true"></span>
+              <span class="pay-body">
+                <span class="pay-t">Card</span>
+                <span class="pay-s">Visa, Mastercard, RuPay</span>
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div class="sum">
+          <div class="line"><span class="line-k">Agreed fee</span><span class="line-v" data-deal-amount>₹20,000</span></div>
+          <div class="line"><span class="line-k">Platform fee · 10%</span><span class="line-v">− <span data-deal-fee>₹2,000</span></span></div>
+          <div class="line line-total"><span class="line-k">Creator payout</span><span class="line-v" data-deal-payout>₹18,000</span></div>
+          <div class="line"><span class="line-k">Escrow</span><span class="line-v"><span class="tag" data-deal-escrow-state>Not funded</span></span></div>
+          <div class="line"><span class="line-k">Payout</span><span class="line-v"><span class="tag" data-deal-out-state>Held in escrow</span></span></div>
+        </div>
+
+        <div class="act">
+          <button class="btn btn-primary" type="button" data-deal-fund>Fund escrow at <span data-deal-amount>₹20,000</span></button>
+          <button class="btn btn-white" type="button" data-deal-release>Release <span data-deal-payout>₹18,000</span></button>
+          <button class="btn btn-ghost" type="button" data-deal-back>Back to contract</button>
+        </div>
+
+        <div class="done" data-deal-done hidden>
+          <p class="done-t">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+            <span data-deal-payout>₹18,000</span> delivered
+          </p>
+          <p class="done-s">The creator has the money, and both of you can now see each other's contact details. The campaign is booked.</p>
+        </div>
+      </section>
+    </div>
+
+    <!-- ------------------------------------------------- always in view -->
+    <aside class="dr-aside" aria-label="Deal summary and contact details">
+      <div class="terms-box">
+        <p class="dr-sub">Agreed so far</p>
+        <div class="terms mt-4">
+          <div class="term"><span class="term-k">Fee</span><span class="term-v od-nowrap" data-deal-amount>₹20,000</span></div>
+          <div class="term"><span class="term-k">Campaign range</span><span class="term-v od-nowrap">₹20,000–₹50,000</span></div>
+          <div class="term"><span class="term-k">Shoot</span><span class="term-v">12–14 Sep</span></div>
+          <div class="term"><span class="term-k">Status</span><span class="term-v" data-deal-status>Negotiating</span></div>
+        </div>
+      </div>
+
+      <section class="pi" data-deal-pi data-locked="true" aria-live="polite">
+        <div class="pi-hd">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10.5" width="16" height="10" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg>
+          <span>
+            <span class="pi-t" data-deal-pi-title>Contact details locked</span>
+            <span class="pi-s" data-deal-pi-note>Hidden from both of you. They unlock as soon as the payment reaches the creator.</span>
+          </span>
+        </div>
+        <div class="pi-rows">
+          <div>
+            <p class="dr-sub">Restaurant</p>
+            <div class="pi-row mt-4">
+              <span class="pi-k">Contact person</span>
+              <span class="pi-v" data-pi data-mask="Hidden until payment" data-real="Priya Raman · Managing Partner">Hidden until payment</span>
+            </div>
+            <div class="pi-row mt-2">
+              <span class="pi-k">Email</span>
+              <span class="pi-v" data-pi data-mask="••••••@••••.in" data-real="priya@sakurahouse.in">••••••@••••.in</span>
+            </div>
+            <div class="pi-row mt-2">
+              <span class="pi-k">Phone</span>
+              <span class="pi-v" data-pi data-mask="+91 ••••• •••••" data-real="+91 98200 41123">+91 ••••• •••••</span>
+            </div>
+          </div>
+          <div>
+            <p class="dr-sub">Creator</p>
+            <div class="pi-row mt-4">
+              <span class="pi-k">Name</span>
+              <span class="pi-v" data-pi data-mask="Hidden until payment" data-real="Ananya Kapoor">Hidden until payment</span>
+            </div>
+            <div class="pi-row mt-2">
+              <span class="pi-k">Handle</span>
+              <span class="pi-v" data-pi data-mask="@••••••••" data-real="@ananya.eats">@••••••••</span>
+            </div>
+            <div class="pi-row mt-2">
+              <span class="pi-k">Phone</span>
+              <span class="pi-v" data-pi data-mask="+91 ••••• •••••" data-real="+91 90045 22118">+91 ••••• •••••</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <div class="dr-foot">
+    <p class="hint">Everything for this campaign stays inside CollabTable. Nothing is discussed over email or WhatsApp, and no contact details leave this room until the payout clears.</p>
+  </div>
+</div>
+
+<div class="scrim" data-scrim></div>
+<script src="assets/app.js"></script>
+</body>
+</html>

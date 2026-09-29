@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Discover creators — CollabTable</title>
+<meta name="description" content="Filter food creators by cuisine, city, and rate to shortlist the right fit for your restaurant.">
+<meta name="theme-color" content="#FE002A">
+<style>
+/* OD-LAYOUT-PRIMITIVES v1 — structure only: display, flex/grid, overflow, wrapping, ratio.
+   Put this @layer first; product CSS outside the layer always wins. */
+@layer od-layout {
+  :where(.od-stack,.od-row,.od-row-top,.od-cluster,.od-grid,.od-field,.od-stat,.od-cell,.od-tile) > :where(*) { min-width: 0; }
+
+  /* containers */
+  .od-stack   { display: flex; flex-direction: column; gap: var(--od-gap, 8px); }
+  .od-row     { display: flex; align-items: center; gap: var(--od-gap, 8px); }
+  .od-row-top { display: flex; align-items: flex-start; gap: var(--od-gap, 8px); }
+  .od-cluster { display: flex; flex-wrap: wrap; align-items: center; gap: var(--od-gap, 8px); }
+  .od-fill    { flex: 1 1 0; min-width: 0; }
+  .od-fixed   { flex: none; }
+  .od-grid    { display: grid; gap: var(--od-gap, 12px); grid-template-columns: repeat(var(--od-cols, 3), minmax(0, 1fr)); }
+
+  /* stacked information: each piece is its own line — never sibling inline spans */
+  .od-stat, .od-field, .od-cell { display: grid; gap: var(--od-gap, 2px); }
+  :where(.od-stat,.od-field,.od-cell) > :where(*) { display: block; }
+  .od-tile { display: grid; grid-template-rows: auto 1fr; }
+  :where(.od-tile) > :where(*) { display: block; }
+
+  /* media keeps its intrinsic ratio by default; never a distorted or cropped
+     cover by accident. height:auto lets the ratio win over an <img height="…">
+     attribute. Cropping to a uniform box is an explicit opt-in: set --od-ratio
+     AND add .od-media-cover together (per the core rule, only where a crop is
+     deliberate — tile thumbs, decorative fills — never on full-frame content). */
+  .od-media { display: block; width: 100%; height: auto; aspect-ratio: var(--od-ratio, auto); }
+  .od-media-cover { object-fit: cover; }
+
+  /* data text only — authored copy is rewritten to its budget instead */
+  .od-truncate { display: block; max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .od-clamp-2, .od-clamp-3 { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+  .od-clamp-2 { -webkit-line-clamp: 2; }
+  .od-clamp-3 { -webkit-line-clamp: 3; }
+  .od-lines-2 { min-height: calc(2 * 1.4em); }   /* block-level reservation for a shared baseline */
+  .od-nowrap  { white-space: nowrap; }           /* 数字+单位 · 价格+起 · 日期+星期 */
+  .od-keep    { word-break: keep-all; overflow-wrap: anywhere; } /* CJK labels break at spaces / <wbr> first */
+
+  /* screen skeleton (optional): bars take their own space, the middle scrolls — no padding guessed for chrome */
+  .od-screen { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; height: 100%; }
+  .od-scroll { overflow-y: auto; overscroll-behavior: contain; min-height: 0; }
+
+  /* horizontal rail: the next item peeks at the edge; trailing room survives overflow */
+  .od-rail { display: flex; gap: var(--od-gap, 8px); overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none;
+             padding-inline: var(--od-rail-pad, 16px); scroll-padding-inline: var(--od-rail-pad, 16px); }
+  .od-rail::-webkit-scrollbar { display: none; }
+  :where(.od-rail) > :where(*) { flex: none; scroll-snap-align: start; }
+  :where(.od-rail) > :where(:last-child) { margin-inline-end: var(--od-rail-pad, 16px); }
+
+  .od-spacer { flex: none; visibility: hidden; pointer-events: none; }
+  .od-touch  { min-width: 44px; min-height: 44px; }
+}
+/* /OD-LAYOUT-PRIMITIVES v1 */
+</style>
+<link rel="stylesheet" href="assets/theme.css">
+<style>
+  .disc { display: grid; gap: var(--s6); padding-top: var(--s7); padding-bottom: var(--s9); }
+  .filters { display: grid; gap: var(--s5); padding: var(--s5); background: var(--surface); border: 1px solid var(--line-10); border-radius: var(--r-lg); }
+  .fgroup { display: grid; gap: var(--s3); }
+  .flabel { display: block; font-size: var(--f-xs); font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted-fg); }
+  .ccard { display: grid; gap: var(--s4); }
+  .ccard-top { display: flex; align-items: center; gap: var(--s3); }
+  .ccard-name { display: block; font-size: var(--f-2xl); font-weight: 500; color: var(--fg); }
+  .ccard-sub { display: block; margin-top: 2px; font-size: var(--f-sm); color: var(--muted-fg); }
+  .ccard-bio { display: block; font-size: var(--f-sm); color: var(--fg-2); }
+  .facts { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s5); }
+  .fact { display: grid; gap: var(--s1); }
+  .fact-k { display: block; font-size: var(--f-xs); color: var(--muted-fg); }
+  .fact-v { display: block; font-size: var(--f-sm); color: var(--fg); }
+  .ccard-acts { display: flex; flex-wrap: wrap; gap: var(--s2); }
+  .results { display: grid; gap: var(--s4); grid-template-columns: 1fr; }
+  .count-t { display: block; font-size: var(--f-sm); color: var(--muted-fg); }
+  @media (min-width: 768px) { .results { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 1200px) { .results { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+</style>
+</head>
+<body>
+<div class="bloom" aria-hidden="true"></div>
+
+<header class="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="index.html" aria-label="CollabTable home">
+      <span class="brand-a">COLLAB</span><span class="brand-b">TABLE</span>
+    </a>
+    <nav class="nav-links" aria-label="Primary">
+      <a class="nav-link" href="landing.html">Overview</a>
+      <a class="nav-link" href="discover-creators.html" aria-current="page">For restaurants</a>
+      <a class="nav-link" href="discover-restaurants.html">For creators</a>
+    </nav>
+    <div class="nav-actions">
+      <a class="btn btn-quiet" href="index.html">All screens</a>
+      <a class="btn btn-primary" href="restaurant-dashboard.html">Restaurant dashboard</a>
+      <button class="burger" type="button" data-burger aria-expanded="false" aria-controls="mnav" aria-label="Open menu">
+        <span></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="mnav" id="mnav" data-mnav aria-hidden="true">
+  <a class="mnav-link" href="index.html">All screens</a>
+  <a class="mnav-link" href="landing.html">Overview</a>
+  <a class="mnav-link" href="discover-creators.html" aria-current="page">Discover creators</a>
+  <a class="mnav-link" href="restaurant-dashboard.html">Restaurant dashboard</a>
+  <a class="mnav-link" href="campaign-detail.html">Campaign detail</a>
+</div>
+
+<main class="page">
+  <div class="wrap">
+    <div class="disc" data-filterable>
+
+      <div>
+        <span class="eyebrow eyebrow-red">For restaurants</span>
+        <h1 class="h2">Discover creators</h1>
+        <p class="lede mt-6">Filter by cuisine, city, and rate. Shortlist a creator to open a deal room
+          and negotiate — contact details stay masked until you both agree.</p>
+      </div>
+
+      <div class="hair hair-3" style="grid-template-columns:repeat(3,minmax(0,1fr))">
+        <div>
+          <span class="stat-n">6</span>
+          <span class="stat-c">Creators match your filters</span>
+        </div>
+        <div>
+          <span class="stat-n">Mumbai</span>
+          <span class="stat-c">Your city filter</span>
+        </div>
+        <div>
+          <span class="stat-n amount-gold od-nowrap">₹20K–₹50K</span>
+          <span class="stat-c">Your published rate range</span>
+        </div>
+      </div>
+
+      <!-- ------------------------------------------------------ filters -->
+      <section class="filters" aria-label="Filters">
+        <div class="search">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input type="search" data-search placeholder="Search by name, cuisine, or city" aria-label="Search creators">
+        </div>
+
+        <div class="fgroup">
+          <span class="flabel">Cuisine</span>
+          <div class="row-wrap" role="group" aria-label="Filter by cuisine" data-chipgroup="multi">
+            <button class="chip" type="button" data-tag="japanese" aria-pressed="true">Japanese</button>
+            <button class="chip" type="button" data-tag="street" aria-pressed="false">Street food</button>
+            <button class="chip" type="button" data-tag="north" aria-pressed="false">North Indian</button>
+            <button class="chip" type="button" data-tag="south" aria-pressed="false">South Indian</button>
+            <button class="chip" type="button" data-tag="desserts" aria-pressed="false">Desserts</button>
+            <button class="chip" type="button" data-tag="cafe" aria-pressed="false">Cafe &amp; bakery</button>
+          </div>
+        </div>
+
+        <div class="fgroup">
+          <span class="flabel">City</span>
+          <div class="row-wrap" role="group" aria-label="Filter by city" data-chipgroup="single">
+            <button class="chip" type="button" data-tag="mumbai" aria-pressed="true">Mumbai</button>
+            <button class="chip" type="button" data-tag="pune" aria-pressed="false">Pune</button>
+            <button class="chip" type="button" data-tag="delhi" aria-pressed="false">Delhi</button>
+          </div>
+        </div>
+
+        <div class="fgroup">
+          <span class="flabel">Availability</span>
+          <div class="row-wrap" role="group" aria-label="Filter by availability" data-chipgroup="multi">
+            <button class="chip" type="button" data-tag="weekend" aria-pressed="false">Weekends</button>
+            <button class="chip" type="button" data-tag="evenings" aria-pressed="false">Evenings</button>
+            <button class="chip" type="button" data-tag="fullweek" aria-pressed="false">Full week</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ------------------------------------------------------ results -->
+      <div>
+        <p class="count-t"><span data-count>6</span> creators match</p>
+
+        <div class="results mt-6">
+
+          <article class="card card-pad card-hover ccard" data-tags="japanese mumbai weekend">
+            <div class="ccard-top">
+              <span class="avatar">A</span>
+              <span style="min-width:0">
+                <span class="ccard-name">Creator Ananya</span>
+                <span class="ccard-sub">Japanese · Mumbai</span>
+              </span>
+            </div>
+            <p class="ccard-bio">Shoots tasting menus and dessert finishes. Reels and story sets,
+              available on both weekend services.</p>
+            <div class="facts">
+              <span class="fact"><span class="fact-k">Rate range</span><span class="fact-v od-nowrap">₹20K–₹50K</span></span>
+              <span class="fact"><span class="fact-k">Format</span><span class="fact-v">Reels, stories</span></span>
+              <span class="fact"><span class="fact-k">Notice</span><span class="fact-v">3–5 days</span></span>
+            </div>
+            <div class="ccard-acts">
+              <a class="btn btn-primary btn-sm" href="campaign-detail.html">Shortlist</a>
+              <button class="btn btn-ghost btn-sm" type="button" data-sheet="deal-room">Open deal room</button>
+              <button class="btn btn-quiet btn-sm" type="button" data-blocked-contact="Her contact details">View contact</button>
+            </div>
+          </article>
+
+          <article class="card card-pad card-hover ccard" data-tags="japanese mumbai evenings">
+            <div class="ccard-top">
+              <span class="avatar avatar-line">R</span>
+              <span style="min-width:0">
+                <span class="ccard-name">Rahul V.</span>
+                <span class="ccard-sub">Japanese · Mumbai</span>
+              </span>
+            </div>
+            <p class="ccard-bio">Reels, feed posts, and menu shoots. Happy to bundle two campaigns into
+              one visit.</p>
+            <div class="facts">
+              <span class="fact"><span class="fact-k">Rate range</span><span class="fact-v od-nowrap">₹25K–₹60K</span></span>
+              <span class="fact"><span class="fact-k">Format</span><span class="fact-v">Reels, feed post</span></span>
+              <span class="fact"><span class="fact-k">Notice</span><span class="fact-v">About a week</span></span>
+            </div>
+            <div class="ccard-acts">
+              <a class="btn btn-primary btn-sm" href="campaign-detail.html">Shortlist</a>
+              <button class="btn btn-ghost btn-sm" type="button" data-sheet="deal-room">Open deal room</button>
+              <button class="btn btn-quiet btn-sm" type="button" data-blocked-contact="His contact details">View contact</button>
+            </div>
+          </article>
+
+          <article class="card card-pad card-hover ccard" data-tags="street mumbai evenings">
+            <div class="ccard-top">
+              <span class="avatar avatar-line">K</span>
+              <span style="min-width:0">
+                <span class="ccard-name">Kabir S.</span>
+                <span class="ccard-sub">Street food · Mumbai</span>
+              </span>
+            </div>
+            <p class="ccard-bio">Evening street-food work, strong on handheld shots and quick service
+              moments.</p>
+            <div class="facts">
+              <span class="fact"><span class="fact-k">Rate range</span><span class="fact-v od-nowrap">₹12K–₹30K</span></span>
+              <span class="fact"><span class="fact-k">Format</span><span class="fact-v">Reels</span></span>
+              <span class="fact"><span class="fact-k">Notice</span><span class="fact-v">3–5 days</span></span>
+            </div>
+            <div class="ccard-acts">
+              <a class="btn btn-primary btn-sm" href="campaign-detail.html">Shortlist</a>
+              <button class="btn btn-ghost btn-sm" type="button" data-sheet="deal-room">Open deal room</button>
+              <button class="btn btn-quiet btn-sm" type="button" data-blocked-contact="His contact details">View contact</button>
+            </div>
+          </article>
+
+          <article class="card card-pad card-hover ccard" data-tags="north mumbai fullweek">
+            <div class="ccard-top">
+              <span class="avatar avatar-line">N</span>
+              <span style="min-width:0">
+                <span class="ccard-name">Nisha R.</span>
+                <span class="ccard-sub">North Indian · Mumbai</span>
+              </span>
+            </div>
+            <p class="ccard-bio">Thali spreads and curry close-ups, available across the week for
+              mid-week service shoots.</p>
+            <div class="facts">
+              <span class="fact"><span class="fact-k">Rate range</span><span class="fact-v od-nowrap">₹18K–₹40K</span></span>
+              <span class="fact"><span class="fact-k">Format</span><span class="fact-v">Reels, feed post</span></span>
+              <span class="fact"><span class="fact-k">Notice</span><span class="fact-v">3–5 days</span></span>
+            </div>
+            <div class="ccard-acts">
+              <a class="btn btn-primary btn-sm" href="campaign-detail.html">Shortlist</a>
+              <button class="btn btn-ghost btn-sm" type="button" data-sheet="deal-room">Open deal room</button>
+              <button class="btn btn-quiet btn-sm" type="button" data-blocked-contact="Her contact details">View contact</button>
+            </div>
+          </article>
+
+          <article class="card card-pad card-hover ccard" data-tags="south mumbai weekend">
+            <div class="ccard-top">
+              <span class="avatar avatar-line">P</span>
+              <span style="min-width:0">
+                <span class="ccard-name">Praveen K.</span>
+                <span class="ccard-sub">South Indian · Mumbai</span>
+              </span>
+            </div>
+            <p class="ccard-bio">Dosa and filter-coffee shoots, with weekend brunch coverage across
+              multiple outlets.</p>
+            <div class="facts">
+              <span class="fact"><span class="fact-k">Rate range</span><span class="fact-v od-nowrap">₹15K–₹35K</span></span>
+              <span class="fact"><span class="fact-k">Format</span><span class="fact-v">Reels, stories</span></span>
+              <span class="fact"><span class="fact-k">Notice</span><span class="fact-v">About a week</span></span>
+            </div>
+            <div class="ccard-acts">
+              <a class="btn btn-primary btn-sm" href="campaign-detail.html">Shortlist</a>
+              <button class="btn btn-ghost btn-sm" type="button" data-sheet="deal-room">Open deal room</button>
+              <button class="btn btn-quiet btn-sm" type="button" data-blocked-contact="His contact details">View contact</button>
+            </div>
+          </article>
+
+          <article class="card card-pad card-hover ccard" data-tags="cafe pune fullweek">
+            <div class="ccard-top">
+              <span class="avatar avatar-line">D</span>
+              <span style="min-width:0">
+                <span class="ccard-name">Diya J.</span>
+                <span class="ccard-sub">Cafe &amp; bakery · Pune</span>
+              </span>
+            </div>
+            <p class="ccard-bio">Bakery and cafe work, pastry close-ups, and weekday afternoon coverage.</p>
+            <div class="facts">
+              <span class="fact"><span class="fact-k">Rate range</span><span class="fact-v od-nowrap">₹14K–₹28K</span></span>
+              <span class="fact"><span class="fact-k">Format</span><span class="fact-v">Reels, feed post</span></span>
+              <span class="fact"><span class="fact-k">Notice</span><span class="fact-v">Two weeks</span></span>
+            </div>
+            <div class="ccard-acts">
+              <a class="btn btn-primary btn-sm" href="campaign-detail.html">Shortlist</a>
+              <button class="btn btn-ghost btn-sm" type="button" data-sheet="deal-room">Open deal room</button>
+              <button class="btn btn-quiet btn-sm" type="button" data-blocked-contact="Her contact details">View contact</button>
+            </div>
+          </article>
+
+        </div>
+
+        <div class="empty panel mt-6" data-empty hidden>
+          <span class="well well-line" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          </span>
+          <span class="empty-t">No creators match these filters</span>
+          <span class="empty-s">Try widening the city, or clearing a cuisine filter. Ranges are shown
+            so you can compare before you shortlist.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer-btm">
+      <span>CollabTable prototype — discover creators.</span>
+      <span>All amounts in Indian rupees (₹).</span>
+    </div>
+  </div>
+</footer>
+
+<!-- ====================================================== deal room pop-up -->
+<!-- One centred pop-up, not a screen. The restaurant and the creator open the
+     same room from any surface, and data-deal-role decides which side of the
+     deal you are looking at. The order is the real one: negotiate, finalise
+     the contract, then pay. Until the creator has been paid, neither side
+     sees the other's name, phone number, email, or handle. -->
+<div class="sheet sheet-deal" id="deal-room" role="dialog" aria-modal="true" tabindex="-1"
+     aria-labelledby="dr-t" aria-describedby="dr-s" aria-hidden="true"
+     data-deal data-stage="offer" data-fee="20000" data-deal-role="restaurant">
+
+  <div class="sheet-head">
+    <div>
+      <span class="eyebrow eyebrow-red">Deal room</span>
+      <h2 class="h4" id="dr-t">Weekend Japanese Experience</h2>
+      <p class="dr-s" id="dr-s">Mumbai · shoot 12–14 Sep · ₹20,000–₹50,000 range. One thread, and it stays here.</p>
+    </div>
+    <button class="sheet-x" type="button" data-sheet-close aria-label="Close deal room">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+
+  <div class="dr-parties">
+    <div class="dr-party" data-you="true">
+      <span class="dr-av" aria-hidden="true">R</span>
+      <span class="dr-party-b">
+        <span class="dr-party-t">Restaurant</span>
+        <span class="dr-party-s">Buyer · Bandra West</span>
+      </span>
+      <span class="tag tag-red dr-you">You</span>
+    </div>
+    <div class="dr-party" data-you="false">
+      <span class="dr-av" aria-hidden="true">C</span>
+      <span class="dr-party-b">
+        <span class="dr-party-t">Creator</span>
+        <span class="dr-party-s">Food creator · Mumbai</span>
+      </span>
+      
+    </div>
+  </div>
+
+  <div class="dr-steps" role="group" aria-label="Deal progress">
+    <span class="dr-step" data-deal-step="offer"><span class="dr-step-n">1</span><span>Negotiate</span></span>
+    <span class="dr-step" data-deal-step="contract"><span class="dr-step-n">2</span><span>Contract</span></span>
+    <span class="dr-step" data-deal-step="payment"><span class="dr-step-n">3</span><span>Payment</span></span>
+  </div>
+  <p class="hint" data-deal-live role="status" aria-live="polite">Stage 1 of 3: Negotiate.</p>
+
+  <div class="dr-cols mt-5">
+    <div class="dr-stack">
+
+      <!-- ------------------------------------------- stage 1 · negotiate -->
+      <section class="stage-panel" data-deal-stage="offer" aria-labelledby="dr-offer">
+        <div>
+          <span class="eyebrow">Stage 1 · Negotiate</span>
+          <h3 class="h3" id="dr-offer" data-deal-title>Agree the scope and the fee</h3>
+        </div>
+
+        <div class="stage-note">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+          <span>Either of you can move the number, and every counter sits in the same thread. The published range for this campaign is ₹20,000–₹50,000, so anything inside it is a fair start.</span>
+        </div>
+
+        <div>
+          <p class="dr-sub">Offers</p>
+          <ol class="offers mt-4" data-deal-thread>
+            <li class="offer" data-side="them">
+              <div class="offer-hd"><span class="offer-who">The creator</span><span class="offer-when">2 hours ago</span></div>
+              <p class="offer-amt">₹20,000</p>
+              <p class="offer-note">Two reels plus a three-story set, shot 12–14 Sep at the Bandra kitchen. Organic usage on your own channels for 90 days.</p>
+            </li>
+          </ol>
+        </div>
+
+        <form class="counter" data-form data-reset data-deal-counter data-success="Counter-offer sent. The other side can accept it or move it again.">
+          <p class="dr-sub">Send a counter-offer</p>
+          <div class="counter-row">
+            <div class="field">
+              <label class="label" for="dr-amount">Your fee</label>
+              <input class="input" id="dr-amount" name="dr-amount" type="number" inputmode="numeric"
+                     min="20000" max="50000" step="500" value="20000" required>
+              <span class="err">Enter a fee between ₹20,000 and ₹50,000.</span>
+            </div>
+            <div class="field field-wide">
+              <label class="label" for="dr-note">What you are changing (optional)</label>
+              <textarea class="textarea" id="dr-note" name="dr-note" rows="2"
+                        placeholder="Add a reel, move the shoot date, ask for longer usage"></textarea>
+            </div>
+          </div>
+          <div class="act">
+            <button class="btn btn-primary" type="submit">Send counter-offer</button>
+            <span class="hint">Nobody is committed until you both accept.</span>
+          </div>
+        </form>
+
+        <div class="act">
+          <button class="btn btn-primary" type="button" data-deal-accept>Accept <span data-deal-amount>₹20,000</span> and finalise</button>
+          <button class="btn btn-white" type="button" data-deal-contract hidden>Open the contract</button>
+        </div>
+      </section>
+
+      <!-- ------------------------------------------- stage 2 · contract -->
+      <section class="stage-panel" data-deal-stage="contract" aria-labelledby="dr-contract" hidden>
+        <div>
+          <span class="eyebrow">Stage 2 · Contract</span>
+          <h3 class="h3" id="dr-contract" data-deal-title>The deal, written down</h3>
+        </div>
+
+        <div class="stage-note stage-note-gold">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>
+          <span>Finalised at <strong data-deal-amount>₹20,000</strong>. Both parties sign below before payment opens, and nothing about either party is revealed until the money moves.</span>
+        </div>
+
+        <div>
+          <p class="dr-sub">What is agreed</p>
+          <div class="agree mt-4">
+            <div class="agree-item"><span class="agree-k">Deliverables</span><span class="agree-v">2 reels + 3 stories</span></div>
+            <div class="agree-item"><span class="agree-k">Shoot window</span><span class="agree-v">12–14 Sep</span></div>
+            <div class="agree-item"><span class="agree-k">Location</span><span class="agree-v">Bandra West, Mumbai</span></div>
+            <div class="agree-item"><span class="agree-k">Usage rights</span><span class="agree-v">Organic, 90 days</span></div>
+            <div class="agree-item"><span class="agree-k">Platform fee</span><span class="agree-v"><span data-deal-fee>₹2,000</span> · 10%</span></div>
+            <div class="agree-item"><span class="agree-k">Creator payout</span><span class="agree-v"><span data-deal-payout>₹18,000</span></span></div>
+            <div class="agree-item"><span class="agree-k">Payment terms</span><span class="agree-v">Escrow on signing, released on delivery</span></div>
+            <div class="agree-item"><span class="agree-k">Cancellation</span><span class="agree-v">Free up to 7 days before the shoot</span></div>
+          </div>
+        </div>
+
+        <div>
+          <p class="dr-sub">Signatures</p>
+          <div class="sign mt-4">
+            <div class="sign-row" data-deal-sign-row="restaurant" data-signed="true">
+              <span class="sign-who">
+                <span class="sign-t">Restaurant</span>
+                <span class="sign-s">Signed inside CollabTable</span>
+              </span>
+              <span class="tag tag-red" data-deal-sign-tag>Signed</span>
+            </div>
+            <div class="sign-row" data-deal-sign-row="creator" data-signed="false">
+              <span class="sign-who">
+                <span class="sign-t">Creator</span>
+                <span class="sign-s">Signed inside CollabTable</span>
+              </span>
+              <span class="tag" data-deal-sign-tag>Needs your signature</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="act">
+          <button class="btn btn-primary" type="button" data-deal-sign>Sign the contract</button>
+          <button class="btn btn-white" type="button" data-deal-next>Go to payment</button>
+          <button class="btn btn-ghost" type="button" data-deal-back>Back to negotiate</button>
+        </div>
+      </section>
+
+      <!-- ------------------------------------------- stage 3 · payment -->
+      <section class="stage-panel" data-deal-stage="payment" aria-labelledby="dr-payment" hidden>
+        <div>
+          <span class="eyebrow">Stage 3 · Payment</span>
+          <h3 class="h3" id="dr-payment" data-deal-title>Move the money</h3>
+        </div>
+
+        <div>
+          <p class="dr-sub">Payment option</p>
+          <div class="pay-list mt-4">
+            <label class="pay" data-on="true">
+              <input type="radio" name="dr-method" value="upi" data-deal-method checked>
+              <span class="pay-dot" aria-hidden="true"></span>
+              <span class="pay-body">
+                <span class="pay-t">UPI</span>
+                <span class="pay-s">Instant · no surcharge</span>
+              </span>
+              <span class="tag tag-live pay-flag">Fastest</span>
+            </label>
+            <label class="pay">
+              <input type="radio" name="dr-method" value="net" data-deal-method>
+              <span class="pay-dot" aria-hidden="true"></span>
+              <span class="pay-body">
+                <span class="pay-t">Net banking</span>
+                <span class="pay-s">Any Indian bank · settles next working day</span>
+              </span>
+            </label>
+            <label class="pay">
+              <input type="radio" name="dr-method" value="card" data-deal-method>
+              <span class="pay-dot" aria-hidden="true"></span>
+              <span class="pay-body">
+                <span class="pay-t">Card</span>
+                <span class="pay-s">Visa, Mastercard, RuPay</span>
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div class="sum">
+          <div class="line"><span class="line-k">Agreed fee</span><span class="line-v" data-deal-amount>₹20,000</span></div>
+          <div class="line"><span class="line-k">Platform fee · 10%</span><span class="line-v">− <span data-deal-fee>₹2,000</span></span></div>
+          <div class="line line-total"><span class="line-k">Creator payout</span><span class="line-v" data-deal-payout>₹18,000</span></div>
+          <div class="line"><span class="line-k">Escrow</span><span class="line-v"><span class="tag" data-deal-escrow-state>Not funded</span></span></div>
+          <div class="line"><span class="line-k">Payout</span><span class="line-v"><span class="tag" data-deal-out-state>Held in escrow</span></span></div>
+        </div>
+
+        <div class="act">
+          <button class="btn btn-primary" type="button" data-deal-fund>Fund escrow at <span data-deal-amount>₹20,000</span></button>
+          <button class="btn btn-white" type="button" data-deal-release>Release <span data-deal-payout>₹18,000</span></button>
+          <button class="btn btn-ghost" type="button" data-deal-back>Back to contract</button>
+        </div>
+
+        <div class="done" data-deal-done hidden>
+          <p class="done-t">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+            <span data-deal-payout>₹18,000</span> delivered
+          </p>
+          <p class="done-s">The creator has the money, and both of you can now see each other's contact details. The campaign is booked.</p>
+        </div>
+      </section>
+    </div>
+
+    <!-- ------------------------------------------------- always in view -->
+    <aside class="dr-aside" aria-label="Deal summary and contact details">
+      <div class="terms-box">
+        <p class="dr-sub">Agreed so far</p>
+        <div class="terms mt-4">
+          <div class="term"><span class="term-k">Fee</span><span class="term-v od-nowrap" data-deal-amount>₹20,000</span></div>
+          <div class="term"><span class="term-k">Campaign range</span><span class="term-v od-nowrap">₹20,000–₹50,000</span></div>
+          <div class="term"><span class="term-k">Shoot</span><span class="term-v">12–14 Sep</span></div>
+          <div class="term"><span class="term-k">Status</span><span class="term-v" data-deal-status>Negotiating</span></div>
+        </div>
+      </div>
+
+      <section class="pi" data-deal-pi data-locked="true" aria-live="polite">
+        <div class="pi-hd">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10.5" width="16" height="10" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg>
+          <span>
+            <span class="pi-t" data-deal-pi-title>Contact details locked</span>
+            <span class="pi-s" data-deal-pi-note>Hidden from both of you. They unlock as soon as the payment reaches the creator.</span>
+          </span>
+        </div>
+        <div class="pi-rows">
+          <div>
+            <p class="dr-sub">Restaurant</p>
+            <div class="pi-row mt-4">
+              <span class="pi-k">Contact person</span>
+              <span class="pi-v" data-pi data-mask="Hidden until payment" data-real="Priya Raman · Managing Partner">Hidden until payment</span>
+            </div>
+            <div class="pi-row mt-2">
+              <span class="pi-k">Email</span>
+              <span class="pi-v" data-pi data-mask="••••••@••••.in" data-real="priya@sakurahouse.in">••••••@••••.in</span>
+            </div>
+            <div class="pi-row mt-2">
+              <span class="pi-k">Phone</span>
+              <span class="pi-v" data-pi data-mask="+91 ••••• •••••" data-real="+91 98200 41123">+91 ••••• •••••</span>
+            </div>
+          </div>
+          <div>
+            <p class="dr-sub">Creator</p>
+            <div class="pi-row mt-4">
+              <span class="pi-k">Name</span>
+              <span class="pi-v" data-pi data-mask="Hidden until payment" data-real="Ananya Kapoor">Hidden until payment</span>
+            </div>
+            <div class="pi-row mt-2">
+              <span class="pi-k">Handle</span>
+              <span class="pi-v" data-pi data-mask="@••••••••" data-real="@ananya.eats">@••••••••</span>
+            </div>
+            <div class="pi-row mt-2">
+              <span class="pi-k">Phone</span>
+              <span class="pi-v" data-pi data-mask="+91 ••••• •••••" data-real="+91 90045 22118">+91 ••••• •••••</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <div class="dr-foot">
+    <p class="hint">Everything for this campaign stays inside CollabTable. Nothing is discussed over email or WhatsApp, and no contact details leave this room until the payout clears.</p>
+  </div>
+</div>
+
+<div class="scrim" data-scrim></div>
+<script src="assets/app.js"></script>
+</body>
+</html>

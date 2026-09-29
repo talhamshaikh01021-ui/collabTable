@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CollabTable — Where Restaurants Meet the Right Creators</title>
+<meta name="description" content="CollabTable connects restaurants with food creators: post a campaign, negotiate, contract, escrow, deliver, and review.">
+<meta name="theme-color" content="#FE002A">
+<style>
+/* OD-LAYOUT-PRIMITIVES v1 — structure only: display, flex/grid, overflow, wrapping, ratio.
+   Put this @layer first; product CSS outside the layer always wins. */
+@layer od-layout {
+  :where(.od-stack,.od-row,.od-row-top,.od-cluster,.od-grid,.od-field,.od-stat,.od-cell,.od-tile) > :where(*) { min-width: 0; }
+
+  /* containers */
+  .od-stack   { display: flex; flex-direction: column; gap: var(--od-gap, 8px); }
+  .od-row     { display: flex; align-items: center; gap: var(--od-gap, 8px); }
+  .od-row-top { display: flex; align-items: flex-start; gap: var(--od-gap, 8px); }
+  .od-cluster { display: flex; flex-wrap: wrap; align-items: center; gap: var(--od-gap, 8px); }
+  .od-fill    { flex: 1 1 0; min-width: 0; }
+  .od-fixed   { flex: none; }
+  .od-grid    { display: grid; gap: var(--od-gap, 12px); grid-template-columns: repeat(var(--od-cols, 3), minmax(0, 1fr)); }
+
+  /* stacked information: each piece is its own line — never sibling inline spans */
+  .od-stat, .od-field, .od-cell { display: grid; gap: var(--od-gap, 2px); }
+  :where(.od-stat,.od-field,.od-cell) > :where(*) { display: block; }
+  .od-tile { display: grid; grid-template-rows: auto 1fr; }
+  :where(.od-tile) > :where(*) { display: block; }
+
+  /* media keeps its intrinsic ratio by default; never a distorted or cropped
+     cover by accident. height:auto lets the ratio win over an <img height="…">
+     attribute. Cropping to a uniform box is an explicit opt-in: set --od-ratio
+     AND add .od-media-cover together (per the core rule, only where a crop is
+     deliberate — tile thumbs, decorative fills — never on full-frame content). */
+  .od-media { display: block; width: 100%; height: auto; aspect-ratio: var(--od-ratio, auto); }
+  .od-media-cover { object-fit: cover; }
+
+  /* data text only — authored copy is rewritten to its budget instead */
+  .od-truncate { display: block; max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .od-clamp-2, .od-clamp-3 { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+  .od-clamp-2 { -webkit-line-clamp: 2; }
+  .od-clamp-3 { -webkit-line-clamp: 3; }
+  .od-lines-2 { min-height: calc(2 * 1.4em); }   /* block-level reservation for a shared baseline */
+  .od-nowrap  { white-space: nowrap; }           /* 数字+单位 · 价格+起 · 日期+星期 */
+  .od-keep    { word-break: keep-all; overflow-wrap: anywhere; } /* CJK labels break at spaces / <wbr> first */
+
+  /* screen skeleton (optional): bars take their own space, the middle scrolls — no padding guessed for chrome */
+  .od-screen { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; height: 100%; }
+  .od-scroll { overflow-y: auto; overscroll-behavior: contain; min-height: 0; }
+
+  /* horizontal rail: the next item peeks at the edge; trailing room survives overflow */
+  .od-rail { display: flex; gap: var(--od-gap, 8px); overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none;
+             padding-inline: var(--od-rail-pad, 16px); scroll-padding-inline: var(--od-rail-pad, 16px); }
+  .od-rail::-webkit-scrollbar { display: none; }
+  :where(.od-rail) > :where(*) { flex: none; scroll-snap-align: start; }
+  :where(.od-rail) > :where(:last-child) { margin-inline-end: var(--od-rail-pad, 16px); }
+
+  .od-spacer { flex: none; visibility: hidden; pointer-events: none; }
+  .od-touch  { min-width: 44px; min-height: 44px; }
+}
+/* /OD-LAYOUT-PRIMITIVES v1 */
+</style>
+<link rel="stylesheet" href="assets/theme.css">
+<style>
+  .hero { position: relative; padding-top: 80px; padding-bottom: 40px; }
+  .hero-art { position: relative; border: 1px solid var(--line-10); border-radius: var(--r-3xl); overflow: hidden; background: var(--surface); }
+  .hero-art .media::after { background: linear-gradient(to top, rgba(0,0,0,0.92), rgba(0,0,0,0.3) 55%, transparent); }
+  .flow-line { display: flex; align-items: center; gap: 10px; }
+  .flow-n { display: block; font-size: 12px; font-weight: 500; letter-spacing: 0.1em; color: var(--fg-5); }
+  .flow-t { display: block; font-size: 15px; font-weight: 500; color: var(--fg); }
+  .flow-s { display: block; margin-top: 2px; font-size: 13px; color: var(--muted-fg); }
+  .side-t { display: block; font-weight: 500; color: var(--fg); }
+  .side-s { display: block; margin-top: 4px; font-size: 13px; color: var(--muted-fg); }
+  .split { display: grid; gap: 32px; grid-template-columns: 1fr; }
+  .plan { position: relative; padding: 24px; background: var(--surface); border: 1px solid var(--line-10); border-radius: var(--r-lg); }
+  .plan-hero { border-color: var(--primary-40); }
+  .plan-badge { position: absolute; top: 16px; right: 16px; }
+  .quote-card { padding: 24px; background: var(--surface); border: 1px solid var(--line-10); border-radius: var(--r-lg); }
+  .quote-t { display: block; font-size: 15px; font-weight: 500; color: var(--fg); }
+  .quote-s { display: block; margin-top: 10px; font-size: 14px; line-height: 1.6; color: var(--fg-2); }
+  .cta-band { position: relative; border: 1px solid var(--line-10); border-radius: var(--r-3xl); background: var(--surface); padding: 40px 32px; overflow: hidden; }
+  .cta-band::before { content: ''; position: absolute; inset: 0; background: radial-gradient(40rem 22rem at 50% 0%, var(--primary-15), transparent 70%); pointer-events: none; }
+  .cta-band > * { position: relative; }
+  @media (min-width: 1024px) { .split { grid-template-columns: 1.05fr 0.95fr; align-items: center; } }
+</style>
+</head>
+<body>
+<div class="bloom" aria-hidden="true"></div>
+
+<header class="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="index.html" aria-label="CollabTable home">
+      <span class="brand-a">COLLAB</span><span class="brand-b">TABLE</span>
+    </a>
+    <nav class="nav-links" aria-label="Primary">
+      <a class="nav-link" href="landing.html" aria-current="page">Overview</a>
+      <a class="nav-link" href="discover-creators.html">For restaurants</a>
+      <a class="nav-link" href="discover-restaurants.html">For creators</a>
+    </nav>
+    <div class="nav-actions">
+      <a class="btn btn-quiet" href="restaurant-onboarding.html">Restaurant signup</a>
+      <a class="btn btn-primary" href="influencer-onboarding.html">Creator signup</a>
+      <button class="burger" type="button" data-burger aria-expanded="false" aria-controls="mnav" aria-label="Open menu">
+        <span></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="mnav" id="mnav" data-mnav aria-hidden="true">
+  <a class="mnav-link" href="landing.html" aria-current="page">Overview</a>
+  <a class="mnav-link" href="discover-creators.html">Discover creators</a>
+  <a class="mnav-link" href="discover-restaurants.html">Discover restaurants</a>
+  <a class="mnav-link" href="restaurant-dashboard.html">Restaurant dashboard</a>
+  <a class="mnav-link" href="influencer-dashboard.html">Creator dashboard</a>
+  <a class="mnav-link" href="restaurant-onboarding.html">Restaurant onboarding</a>
+  <a class="mnav-link" href="influencer-onboarding.html">Creator onboarding</a>
+  <a class="mnav-link" href="campaign-detail.html">Campaign detail</a>
+  <a class="mnav-link" href="index.html">All screens</a>
+</div>
+
+<main class="page">
+
+  <!-- ============================================================ hero -->
+  <section class="hero">
+    <div class="wrap">
+      <div class="split">
+        <div>
+          <span class="eyebrow eyebrow-red">Restaurant × food creator</span>
+          <h1 class="display">Where restaurants meet the <span class="hl-red">right creators</span>.</h1>
+          <p class="lede mt-6">Post a campaign, meet creators who already shoot the food you serve,
+            agree the terms in one place, and pay through escrow when the content lands.</p>
+          <div class="row-wrap mt-8">
+            <a class="btn btn-primary" href="restaurant-onboarding.html">
+              Post your first campaign
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </a>
+            <a class="btn btn-ghost" href="influencer-onboarding.html">I'm a creator</a>
+          </div>
+          <div class="ticks mt-8" style="max-width:420px">
+            <span class="tick">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+              <span>Escrow holds payment until you approve the delivered content</span>
+            </span>
+            <span class="tick">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+              <span>Contact details stay hidden until both sides accept a deal</span>
+            </span>
+            <span class="tick">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+              <span>Negotiation, contract, and payment live in one deal room</span>
+            </span>
+          </div>
+        </div>
+
+        <figure style="margin:0">
+          <div class="hero-art">
+            <div class="media ratio-43">
+              <img src="assets/media/dosa.jpg" width="1100" height="857"
+                   alt="A dosa being served on a banana leaf at a restaurant table" fetchpriority="high">
+            </div>
+            <figcaption class="caption">
+              <span class="tag tag-red">Live campaign</span>
+              <span class="caption-t">Weekend Japanese Experience</span>
+              <span class="caption-s">Sakura House · Mumbai · ₹20K–₹50K</span>
+            </figcaption>
+          </div>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================== trust marquee -->
+  <section class="section-sm">
+    <div class="marquee" aria-label="Cities and cuisines active on CollabTable">
+      <div class="marquee-track" aria-hidden="true">
+        <span class="marquee-item">Mumbai</span><span class="marquee-sep"></span>
+        <span class="marquee-item">Japanese</span><span class="marquee-sep"></span>
+        <span class="marquee-item">North Indian</span><span class="marquee-sep"></span>
+        <span class="marquee-item">South Indian</span><span class="marquee-sep"></span>
+        <span class="marquee-item">Street food</span><span class="marquee-sep"></span>
+        <span class="marquee-item">Desserts</span><span class="marquee-sep"></span>
+        <span class="marquee-item">Cafe &amp; bakery</span><span class="marquee-sep"></span>
+        <span class="marquee-item">Biryani</span><span class="marquee-sep"></span>
+        <span class="marquee-item">Mumbai</span><span class="marquee-sep"></span>
+        <span class="marquee-item">Japanese</span><span class="marquee-sep"></span>
+        <span class="marquee-item">North Indian</span><span class="marquee-sep"></span>
+        <span class="marquee-item">South Indian</span><span class="marquee-sep"></span>
+        <span class="marquee-item">Street food</span><span class="marquee-sep"></span>
+        <span class="marquee-item">Desserts</span><span class="marquee-sep"></span>
+        <span class="marquee-item">Cafe &amp; bakery</span><span class="marquee-sep"></span>
+        <span class="marquee-item">Biryani</span><span class="marquee-sep"></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================================== the five stages -->
+  <section class="section">
+    <div class="wrap">
+      <div class="sec-head center">
+        <span class="eyebrow">How a campaign runs</span>
+        <h2 class="h2">Five stages, one deal room</h2>
+        <p class="lede mt-6" style="margin-inline:auto">Every collaboration follows the same path,
+          so both sides always know where a campaign stands.</p>
+      </div>
+
+      <ol class="grid grid-3" style="margin-top:40px">
+        <li class="panel">
+          <span class="well" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>
+          </span>
+          <span class="flow-n mt-6">01</span>
+          <span class="flow-t">Brief</span>
+          <span class="flow-s">The restaurant describes the menu, the dates, the deliverables, and the budget range.</span>
+        </li>
+        <li class="panel">
+          <span class="well" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          </span>
+          <span class="flow-n mt-6">02</span>
+          <span class="flow-t">Match</span>
+          <span class="flow-s">Creators apply from the campaign page, and the restaurant shortlists who fits.</span>
+        </li>
+        <li class="panel">
+          <span class="well" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 12h8M12 8v8"/><circle cx="12" cy="12" r="9"/></svg>
+          </span>
+          <span class="flow-n mt-6">03</span>
+          <span class="flow-t">Negotiate</span>
+          <span class="flow-s">Offer and counter-offer settle the fee, scope, and shoot date before signing.</span>
+        </li>
+        <li class="panel">
+          <span class="well well-gold" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18"/></svg>
+          </span>
+          <span class="flow-n mt-6">04</span>
+          <span class="flow-t">Escrow</span>
+          <span class="flow-s">The restaurant funds escrow. The creator is paid only after the content is approved.</span>
+        </li>
+        <li class="panel">
+          <span class="well" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m13 2-4 11h7l-3 9 4-12h-7l3-8Z"/></svg>
+          </span>
+          <span class="flow-n mt-6">05</span>
+          <span class="flow-t">Deliver</span>
+          <span class="flow-s">The creator delivers through the platform, and both sides confirm to release payment.</span>
+        </li>
+        <li class="panel" style="background:transparent;border-style:dashed">
+          <span class="well well-line" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10.5" width="16" height="10" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg>
+          </span>
+          <span class="flow-n mt-6">Throughout</span>
+          <span class="flow-t">Contact stays masked</span>
+          <span class="flow-s">Phone, email, and handles unlock only after the contract is accepted.</span>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ==================================================== two sides -->
+  <section class="section">
+    <div class="wrap">
+      <div class="sec-head center">
+        <span class="eyebrow eyebrow-gold">Two different needs</span>
+        <h2 class="h2">One standard of work</h2>
+      </div>
+
+      <div class="grid grid-2 mt-8" style="margin-top:40px">
+        <div class="plan">
+          <span class="well" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V9l5-3 5 3v12M15 21V12l4 2v7"/><path d="M8 12h.01M8 16h.01M12 12h.01M12 16h.01"/></svg>
+          </span>
+          <h3 class="h3 mt-6">For restaurants</h3>
+          <p class="side-s mt-6" style="max-width:32rem">You need food that looks as good on the feed as it does on the plate, shot by someone who already knows your menu.</p>
+          <div class="mt-8">
+            <a class="btn btn-ghost btn-block" href="discover-creators.html">Discover creators</a>
+            <a class="btn btn-quiet btn-block mt-6" href="restaurant-dashboard.html">Restaurant dashboard</a>
+          </div>
+        </div>
+
+        <div class="plan plan-hero">
+          <span class="tag tag-gold plan-badge">For creators</span>
+          <span class="well well-gold" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 5.2a3.5 3.5 0 0 1 0 5.6M18 20a6 6 0 0 0-3-5.2"/></svg>
+          </span>
+          <h3 class="h3 mt-6">For food creators</h3>
+          <p class="side-s mt-6" style="max-width:32rem">You need paid brand work that respects your rate, your schedule, and the fact that restaurants need content they can actually post.</p>
+          <div class="mt-8">
+            <a class="btn btn-primary btn-block" href="discover-restaurants.html">Browse campaigns</a>
+            <a class="btn btn-quiet btn-block mt-6" href="influencer-dashboard.html">Creator dashboard</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================================ the worked example -->
+  <section class="section">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">Worked example</span>
+        <h2 class="h2">Weekend Japanese Experience</h2>
+        <p class="lede mt-6">A real campaign running through the prototype, from brief to released payment.</p>
+      </div>
+
+      <div class="table-wrap mt-8">
+        <table>
+          <caption class="sr-only">Weekend Japanese Experience campaign terms</caption>
+          <thead>
+            <tr>
+              <th scope="col" class="col-a">Term</th>
+              <th scope="col">Agreed value</th>
+              <th scope="col">What it covers</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="cell-t">Restaurant</span><span class="cell-s">Verified on CollabTable</span></td>
+              <td><span class="cell-t">Sakura House</span><span class="cell-s">Mumbai</span></td>
+              <td><span class="cell-t">Weekend Japanese experience</span><span class="cell-s">Launch campaign for the new tasting menu</span></td>
+            </tr>
+            <tr>
+              <td><span class="cell-t">Creator</span><span class="cell-s">Applied from the campaign page</span></td>
+              <td><span class="cell-t">Creator Ananya</span><span class="cell-s">Food creator</span></td>
+              <td><span class="cell-t">Shoot, edit, and deliver content</span><span class="cell-s">Scope confirmed in the deal room</span></td>
+            </tr>
+            <tr>
+              <td><span class="cell-t">Budget</span><span class="cell-s">Published range</span></td>
+              <td><span class="cell-t">₹20K–₹50K</span><span class="cell-s">Deadline: Sep 15</span></td>
+              <td><span class="cell-t">Full scope as briefed</span><span class="cell-s">Creators filter by this range</span></td>
+            </tr>
+            <tr>
+              <td><span class="cell-t">Escrow funded</span><span class="cell-s">Held until delivery is approved</span></td>
+              <td><span class="cell-t">₹20,000</span><span class="cell-s">Funded by the restaurant</span></td>
+              <td><span class="cell-t">Released on approval</span><span class="cell-s">Both sides confirm delivery</span></td>
+            </tr>
+            <tr>
+              <td><span class="cell-t">Platform fee</span><span class="cell-s">Deducted from escrow</span></td>
+              <td><span class="cell-t">₹2,000</span><span class="cell-s">Shown before payment</span></td>
+              <td><span class="cell-t">Net payout: ₹18,000</span><span class="cell-s">Paid to the creator on release</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="row-wrap mt-8">
+        <a class="btn btn-primary" href="campaign-detail.html">Open the campaign</a>
+        <button class="btn btn-ghost" type="button" data-sheet="deal-room">Open the deal room</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================================================== testimonials -->
+  <section class="section">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">In their words</span>
+        <h2 class="h2">What each side says</h2>
+      </div>
+      <div class="grid grid-3 mt-8" style="margin-top:40px">
+        <div class="quote-card">
+          <span class="tag tag-red">Restaurant</span>
+          <p class="quote-s">“I posted the brief on a Monday and had three applications by Tuesday. We agreed the scope in the deal room and the content came back shootable.”</p>
+          <span class="quote-t mt-8">Sakura House</span>
+        </div>
+        <div class="quote-card">
+          <span class="tag tag-gold">Creator</span>
+          <p class="quote-s">“The budget range was on the page before I applied, and escrow meant I never had to chase an invoice after delivery.”</p>
+          <span class="quote-t mt-8">Creator Ananya</span>
+        </div>
+        <div class="quote-card">
+          <span class="tag">Both</span>
+          <p class="quote-s">“Negotiation, contract, and payment never left one page. Neither of us had to share a phone number to get a shoot done.”</p>
+          <span class="quote-t mt-8">The deal room</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================== faq -->
+  <section class="section">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">Things people ask</span>
+        <h2 class="h2">Before you start</h2>
+      </div>
+
+      <div class="faq mt-8" style="margin-top:40px">
+        <div class="faq-item" data-open="false">
+          <h3>
+            <button class="faq-q" type="button" aria-expanded="false">
+              <span>What exactly is CollabTable?</span>
+              <span class="faq-x" aria-hidden="true"></span>
+            </button>
+          </h3>
+          <div class="faq-a">
+            <p>It is a marketplace where restaurants post food-content campaigns and food creators apply.
+              Both sides agree terms in a shared deal room, and payment moves through escrow rather than directly.</p>
+          </div>
+        </div>
+        <div class="faq-item" data-open="false">
+          <h3>
+            <button class="faq-q" type="button" aria-expanded="false">
+              <span>How much does a campaign cost?</span>
+              <span class="faq-x" aria-hidden="true"></span>
+            </button>
+          </h3>
+          <div class="faq-a">
+            <p>It depends on the brief. Every campaign publishes a budget range — for example
+              ₹20K–₹50K — and the final figure is agreed between the restaurant and the creator in the deal room
+              before a contract is signed.</p>
+          </div>
+        </div>
+        <div class="faq-item" data-open="false">
+          <h3>
+            <button class="faq-q" type="button" aria-expanded="false">
+              <span>When does the creator get paid?</span>
+              <span class="faq-x" aria-hidden="true"></span>
+            </button>
+          </h3>
+          <div class="faq-a">
+            <p>After the contract is accepted, the restaurant funds escrow. The platform fee is deducted,
+              and the creator receives the net payout once the delivered content is approved and the review step is complete.</p>
+          </div>
+        </div>
+        <div class="faq-item" data-open="false">
+          <h3>
+            <button class="faq-q" type="button" aria-expanded="false">
+              <span>Can I contact a creator directly?</span>
+              <span class="faq-x" aria-hidden="true"></span>
+            </button>
+          </h3>
+          <div class="faq-a">
+            <p>Not before a deal is agreed. Phone numbers, emails, and handles are masked on both sides,
+              and they unlock only once the offer and contract are accepted in the deal room. This keeps the
+              campaign record complete and payment protected.</p>
+          </div>
+        </div>
+        <div class="faq-item" data-open="false">
+          <h3>
+            <button class="faq-q" type="button" aria-expanded="false">
+              <span>What happens if a deal falls through?</span>
+              <span class="faq-x" aria-hidden="true"></span>
+            </button>
+          </h3>
+          <div class="faq-a">
+            <p>If escrow has not been funded, nothing moves. If escrow was funded and the campaign stops,
+              the amount stays held until both sides confirm how it should be released.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================== cta -->
+  <section class="section">
+    <div class="wrap">
+      <div class="cta-band center">
+        <span class="eyebrow eyebrow-red">Ready when you are</span>
+        <h2 class="h2">Pick a side of the table</h2>
+        <p class="lede mt-6" style="margin-inline:auto">Set up your side first — it takes a couple of minutes
+          and it unlocks the right discovery and deal tools.</p>
+        <div class="row-wrap mt-8" style="justify-content:center">
+          <a class="btn btn-primary" href="restaurant-onboarding.html">I run a restaurant</a>
+          <a class="btn btn-ghost" href="influencer-onboarding.html">I'm a creator</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer-top">
+      <div style="max-width:280px">
+        <span class="brand"><span class="brand-a">COLLAB</span><span class="brand-b">TABLE</span></span>
+        <p class="side-s mt-6">Where restaurants meet the right creators.</p>
+      </div>
+      <div>
+        <span class="footer-h">Screens</span>
+        <a class="footer-link" href="index.html">All screens</a>
+        <a class="footer-link" href="landing.html">Overview</a>
+        <a class="footer-link" href="campaign-detail.html">Campaign detail</a>
+      </div>
+      <div>
+        <span class="footer-h">Marketplace</span>
+        <a class="footer-link" href="discover-creators.html">Discover creators</a>
+        <a class="footer-link" href="discover-restaurants.html">Discover campaigns</a>
+      </div>
+      <div>
+        <span class="footer-h">Deal flow</span>
+        <button class="footer-link" type="button" data-sheet="deal-room">Deal room</button>
+        <a class="footer-link" href="restaurant-dashboard.html">Restaurant dashboard</a>
+        <a class="footer-link" href="influencer-dashboard.html">Creator dashboard</a>
+      </div>
+    </div>
+    <div class="footer-btm">
+      <span>CollabTable prototype — editable HTML source.</span>
+      <span>All amounts in Indian rupees (₹).</span>
+    </div>
+  </div>
+</footer>
+
+<!-- ====================================================== deal room pop-up -->
+<!-- One centred pop-up, not a screen. The restaurant and the creator open the
+     same room from any surface, and data-deal-role decides which side of the
+     deal you are looking at. The order is the real one: negotiate, finalise
+     the contract, then pay. Until the creator has been paid, neither side
+     sees the other's name, phone number, email, or handle. -->
+<div class="sheet sheet-deal" id="deal-room" role="dialog" aria-modal="true" tabindex="-1"
+     aria-labelledby="dr-t" aria-describedby="dr-s" aria-hidden="true"
+     data-deal data-stage="offer" data-fee="20000" data-deal-role="restaurant">
+
+  <div class="sheet-head">
+    <div>
+      <span class="eyebrow eyebrow-red">Deal room</span>
+      <h2 class="h4" id="dr-t">Weekend Japanese Experience</h2>
+      <p class="dr-s" id="dr-s">Mumbai · shoot 12–14 Sep · ₹20,000–₹50,000 range. One thread, and it stays here.</p>
+    </div>
+    <button class="sheet-x" type="button" data-sheet-close aria-label="Close deal room">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+
+  <div class="dr-parties">
+    <div class="dr-party" data-you="true">
+      <span class="dr-av" aria-hidden="true">R</span>
+      <span class="dr-party-b">
+        <span class="dr-party-t">Restaurant</span>
+        <span class="dr-party-s">Buyer · Bandra West</span>
+      </span>
+      <span class="tag tag-red dr-you">You</span>
+    </div>
+    <div class="dr-party" data-you="false">
+      <span class="dr-av" aria-hidden="true">C</span>
+      <span class="dr-party-b">
+        <span class="dr-party-t">Creator</span>
+        <span class="dr-party-s">Food creator · Mumbai</span>
+      </span>
+      
+    </div>
+  </div>
+
+  <div class="dr-steps" role="group" aria-label="Deal progress">
+    <span class="dr-step" data-deal-step="offer"><span class="dr-step-n">1</span><span>Negotiate</span></span>
+    <span class="dr-step" data-deal-step="contract"><span class="dr-step-n">2</span><span>Contract</span></span>
+    <span class="dr-step" data-deal-step="payment"><span class="dr-step-n">3</span><span>Payment</span></span>
+  </div>
+  <p class="hint" data-deal-live role="status" aria-live="polite">Stage 1 of 3: Negotiate.</p>
+
+  <div class="dr-cols mt-5">
+    <div class="dr-stack">
+
+      <!-- ------------------------------------------- stage 1 · negotiate -->
+      <section class="stage-panel" data-deal-stage="offer" aria-labelledby="dr-offer">
+        <div>
+          <span class="eyebrow">Stage 1 · Negotiate</span>
+          <h3 class="h3" id="dr-offer" data-deal-title>Agree the scope and the fee</h3>
+        </div>
+
+        <div class="stage-note">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+          <span>Either of you can move the number, and every counter sits in the same thread. The published range for this campaign is ₹20,000–₹50,000, so anything inside it is a fair start.</span>
+        </div>
+
+        <div>
+          <p class="dr-sub">Offers</p>
+          <ol class="offers mt-4" data-deal-thread>
+            <li class="offer" data-side="them">
+              <div class="offer-hd"><span class="offer-who">The creator</span><span class="offer-when">2 hours ago</span></div>
+              <p class="offer-amt">₹20,000</p>
+              <p class="offer-note">Two reels plus a three-story set, shot 12–14 Sep at the Bandra kitchen. Organic usage on your own channels for 90 days.</p>
+            </li>
+          </ol>
+        </div>
+
+        <form class="counter" data-form data-reset data-deal-counter data-success="Counter-offer sent. The other side can accept it or move it again.">
+          <p class="dr-sub">Send a counter-offer</p>
+          <div class="counter-row">
+            <div class="field">
+              <label class="label" for="dr-amount">Your fee</label>
+              <input class="input" id="dr-amount" name="dr-amount" type="number" inputmode="numeric"
+                     min="20000" max="50000" step="500" value="20000" required>
+              <span class="err">Enter a fee between ₹20,000 and ₹50,000.</span>
+            </div>
+            <div class="field field-wide">
+              <label class="label" for="dr-note">What you are changing (optional)</label>
+              <textarea class="textarea" id="dr-note" name="dr-note" rows="2"
+                        placeholder="Add a reel, move the shoot date, ask for longer usage"></textarea>
+            </div>
+          </div>
+          <div class="act">
+            <button class="btn btn-primary" type="submit">Send counter-offer</button>
+            <span class="hint">Nobody is committed until you both accept.</span>
+          </div>
+        </form>
+
+        <div class="act">
+          <button class="btn btn-primary" type="button" data-deal-accept>Accept <span data-deal-amount>₹20,000</span> and finalise</button>
+          <button class="btn btn-white" type="button" data-deal-contract hidden>Open the contract</button>
+        </div>
+      </section>
+
+      <!-- ------------------------------------------- stage 2 · contract -->
+      <section class="stage-panel" data-deal-stage="contract" aria-labelledby="dr-contract" hidden>
+        <div>
+          <span class="eyebrow">Stage 2 · Contract</span>
+          <h3 class="h3" id="dr-contract" data-deal-title>The deal, written down</h3>
+        </div>
+
+        <div class="stage-note stage-note-gold">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>
+          <span>Finalised at <strong data-deal-amount>₹20,000</strong>. Both parties sign below before payment opens, and nothing about either party is revealed until the money moves.</span>
+        </div>
+
+        <div>
+          <p class="dr-sub">What is agreed</p>
+          <div class="agree mt-4">
+            <div class="agree-item"><span class="agree-k">Deliverables</span><span class="agree-v">2 reels + 3 stories</span></div>
+            <div class="agree-item"><span class="agree-k">Shoot window</span><span class="agree-v">12–14 Sep</span></div>
+            <div class="agree-item"><span class="agree-k">Location</span><span class="agree-v">Bandra West, Mumbai</span></div>
+            <div class="agree-item"><span class="agree-k">Usage rights</span><span class="agree-v">Organic, 90 days</span></div>
+            <div class="agree-item"><span class="agree-k">Platform fee</span><span class="agree-v"><span data-deal-fee>₹2,000</span> · 10%</span></div>
+            <div class="agree-item"><span class="agree-k">Creator payout</span><span class="agree-v"><span data-deal-payout>₹18,000</span></span></div>
+            <div class="agree-item"><span class="agree-k">Payment terms</span><span class="agree-v">Escrow on signing, released on delivery</span></div>
+            <div class="agree-item"><span class="agree-k">Cancellation</span><span class="agree-v">Free up to 7 days before the shoot</span></div>
+          </div>
+        </div>
+
+        <div>
+          <p class="dr-sub">Signatures</p>
+          <div class="sign mt-4">
+            <div class="sign-row" data-deal-sign-row="restaurant" data-signed="true">
+              <span class="sign-who">
+                <span class="sign-t">Restaurant</span>
+                <span class="sign-s">Signed inside CollabTable</span>
+              </span>
+              <span class="tag tag-red" data-deal-sign-tag>Signed</span>
+            </div>
+            <div class="sign-row" data-deal-sign-row="creator" data-signed="false">
+              <span class="sign-who">
+                <span class="sign-t">Creator</span>
+                <span class="sign-s">Signed inside CollabTable</span>
+              </span>
+              <span class="tag" data-deal-sign-tag>Needs your signature</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="act">
+          <button class="btn btn-primary" type="button" data-deal-sign>Sign the contract</button>
+          <button class="btn btn-white" type="button" data-deal-next>Go to payment</button>
+          <button class="btn btn-ghost" type="button" data-deal-back>Back to negotiate</button>
+        </div>
+      </section>
+
+      <!-- ------------------------------------------- stage 3 · payment -->
+      <section class="stage-panel" data-deal-stage="payment" aria-labelledby="dr-payment" hidden>
+        <div>
+          <span class="eyebrow">Stage 3 · Payment</span>
+          <h3 class="h3" id="dr-payment" data-deal-title>Move the money</h3>
+        </div>
+
+        <div>
+          <p class="dr-sub">Payment option</p>
+          <div class="pay-list mt-4">
+            <label class="pay" data-on="true">
+              <input type="radio" name="dr-method" value="upi" data-deal-method checked>
+              <span class="pay-dot" aria-hidden="true"></span>
+              <span class="pay-body">
+                <span class="pay-t">UPI</span>
+                <span class="pay-s">Instant · no surcharge</span>
+              </span>
+              <span class="tag tag-live pay-flag">Fastest</span>
+            </label>
+            <label class="pay">
+              <input type="radio" name="dr-method" value="net" data-deal-method>
+              <span class="pay-dot" aria-hidden="true"></span>
+              <span class="pay-body">
+                <span class="pay-t">Net banking</span>
+                <span class="pay-s">Any Indian bank · settles next working day</span>
+              </span>
+            </label>
+            <label class="pay">
+              <input type="radio" name="dr-method" value="card" data-deal-method>
+              <span class="pay-dot" aria-hidden="true"></span>
+              <span class="pay-body">
+                <span class="pay-t">Card</span>
+                <span class="pay-s">Visa, Mastercard, RuPay</span>
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div class="sum">
+          <div class="line"><span class="line-k">Agreed fee</span><span class="line-v" data-deal-amount>₹20,000</span></div>
+          <div class="line"><span class="line-k">Platform fee · 10%</span><span class="line-v">− <span data-deal-fee>₹2,000</span></span></div>
+          <div class="line line-total"><span class="line-k">Creator payout</span><span class="line-v" data-deal-payout>₹18,000</span></div>
+          <div class="line"><span class="line-k">Escrow</span><span class="line-v"><span class="tag" data-deal-escrow-state>Not funded</span></span></div>
+          <div class="line"><span class="line-k">Payout</span><span class="line-v"><span class="tag" data-deal-out-state>Held in escrow</span></span></div>
+        </div>
+
+        <div class="act">
+          <button class="btn btn-primary" type="button" data-deal-fund>Fund escrow at <span data-deal-amount>₹20,000</span></button>
+          <button class="btn btn-white" type="button" data-deal-release>Release <span data-deal-payout>₹18,000</span></button>
+          <button class="btn btn-ghost" type="button" data-deal-back>Back to contract</button>
+        </div>
+
+        <div class="done" data-deal-done hidden>
+          <p class="done-t">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+            <span data-deal-payout>₹18,000</span> delivered
+          </p>
+          <p class="done-s">The creator has the money, and both of you can now see each other's contact details. The campaign is booked.</p>
+        </div>
+      </section>
+    </div>
+
+    <!-- ------------------------------------------------- always in view -->
+    <aside class="dr-aside" aria-label="Deal summary and contact details">
+      <div class="terms-box">
+        <p class="dr-sub">Agreed so far</p>
+        <div class="terms mt-4">
+          <div class="term"><span class="term-k">Fee</span><span class="term-v od-nowrap" data-deal-amount>₹20,000</span></div>
+          <div class="term"><span class="term-k">Campaign range</span><span class="term-v od-nowrap">₹20,000–₹50,000</span></div>
+          <div class="term"><span class="term-k">Shoot</span><span class="term-v">12–14 Sep</span></div>
+          <div class="term"><span class="term-k">Status</span><span class="term-v" data-deal-status>Negotiating</span></div>
+        </div>
+      </div>
+
+      <section class="pi" data-deal-pi data-locked="true" aria-live="polite">
+        <div class="pi-hd">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10.5" width="16" height="10" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg>
+          <span>
+            <span class="pi-t" data-deal-pi-title>Contact details locked</span>
+            <span class="pi-s" data-deal-pi-note>Hidden from both of you. They unlock as soon as the payment reaches the creator.</span>
+          </span>
+        </div>
+        <div class="pi-rows">
+          <div>
+            <p class="dr-sub">Restaurant</p>
+            <div class="pi-row mt-4">
+              <span class="pi-k">Contact person</span>
+              <span class="pi-v" data-pi data-mask="Hidden until payment" data-real="Priya Raman · Managing Partner">Hidden until payment</span>
+            </div>
+            <div class="pi-row mt-2">
+              <span class="pi-k">Email</span>
+              <span class="pi-v" data-pi data-mask="••••••@••••.in" data-real="priya@sakurahouse.in">••••••@••••.in</span>
+            </div>
+            <div class="pi-row mt-2">
+              <span class="pi-k">Phone</span>
+              <span class="pi-v" data-pi data-mask="+91 ••••• •••••" data-real="+91 98200 41123">+91 ••••• •••••</span>
+            </div>
+          </div>
+          <div>
+            <p class="dr-sub">Creator</p>
+            <div class="pi-row mt-4">
+              <span class="pi-k">Name</span>
+              <span class="pi-v" data-pi data-mask="Hidden until payment" data-real="Ananya Kapoor">Hidden until payment</span>
+            </div>
+            <div class="pi-row mt-2">
+              <span class="pi-k">Handle</span>
+              <span class="pi-v" data-pi data-mask="@••••••••" data-real="@ananya.eats">@••••••••</span>
+            </div>
+            <div class="pi-row mt-2">
+              <span class="pi-k">Phone</span>
+              <span class="pi-v" data-pi data-mask="+91 ••••• •••••" data-real="+91 90045 22118">+91 ••••• •••••</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <div class="dr-foot">
+    <p class="hint">Everything for this campaign stays inside CollabTable. Nothing is discussed over email or WhatsApp, and no contact details leave this room until the payout clears.</p>
+  </div>
+</div>
+
+<div class="scrim" data-scrim></div>
+<script src="assets/app.js"></script>
+</body>
+</html>

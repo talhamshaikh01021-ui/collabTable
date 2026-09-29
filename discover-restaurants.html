@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Discover restaurants &amp; campaigns — CollabTable</title>
+<meta name="description" content="Browse open restaurant campaigns, filter by cuisine and city, and apply with a rate inside the published range.">
+<meta name="theme-color" content="#FE002A">
+<style>
+/* OD-LAYOUT-PRIMITIVES v1 — structure only: display, flex/grid, overflow, wrapping, ratio.
+   Put this @layer first; product CSS outside the layer always wins. */
+@layer od-layout {
+  :where(.od-stack,.od-row,.od-row-top,.od-cluster,.od-grid,.od-field,.od-stat,.od-cell,.od-tile) > :where(*) { min-width: 0; }
+
+  /* containers */
+  .od-stack   { display: flex; flex-direction: column; gap: var(--od-gap, 8px); }
+  .od-row     { display: flex; align-items: center; gap: var(--od-gap, 8px); }
+  .od-row-top { display: flex; align-items: flex-start; gap: var(--od-gap, 8px); }
+  .od-cluster { display: flex; flex-wrap: wrap; align-items: center; gap: var(--od-gap, 8px); }
+  .od-fill    { flex: 1 1 0; min-width: 0; }
+  .od-fixed   { flex: none; }
+  .od-grid    { display: grid; gap: var(--od-gap, 12px); grid-template-columns: repeat(var(--od-cols, 3), minmax(0, 1fr)); }
+
+  /* stacked information: each piece is its own line — never sibling inline spans */
+  .od-stat, .od-field, .od-cell { display: grid; gap: var(--od-gap, 2px); }
+  :where(.od-stat,.od-field,.od-cell) > :where(*) { display: block; }
+  .od-tile { display: grid; grid-template-rows: auto 1fr; }
+  :where(.od-tile) > :where(*) { display: block; }
+
+  /* media keeps its intrinsic ratio by default; never a distorted or cropped
+     cover by accident. height:auto lets the ratio win over an <img height="…">
+     attribute. Cropping to a uniform box is an explicit opt-in: set --od-ratio
+     AND add .od-media-cover together (per the core rule, only where a crop is
+     deliberate — tile thumbs, decorative fills — never on full-frame content). */
+  .od-media { display: block; width: 100%; height: auto; aspect-ratio: var(--od-ratio, auto); }
+  .od-media-cover { object-fit: cover; }
+
+  /* data text only — authored copy is rewritten to its budget instead */
+  .od-truncate { display: block; max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .od-clamp-2, .od-clamp-3 { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+  .od-clamp-2 { -webkit-line-clamp: 2; }
+  .od-clamp-3 { -webkit-line-clamp: 3; }
+  .od-lines-2 { min-height: calc(2 * 1.4em); }   /* block-level reservation for a shared baseline */
+  .od-nowrap  { white-space: nowrap; }           /* 数字+单位 · 价格+起 · 日期+星期 */
+  .od-keep    { word-break: keep-all; overflow-wrap: anywhere; } /* CJK labels break at spaces / <wbr> first */
+
+  /* screen skeleton (optional): bars take their own space, the middle scrolls — no padding guessed for chrome */
+  .od-screen { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; height: 100%; }
+  .od-scroll { overflow-y: auto; overscroll-behavior: contain; min-height: 0; }
+
+  /* horizontal rail: the next item peeks at the edge; trailing room survives overflow */
+  .od-rail { display: flex; gap: var(--od-gap, 8px); overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none;
+             padding-inline: var(--od-rail-pad, 16px); scroll-padding-inline: var(--od-rail-pad, 16px); }
+  .od-rail::-webkit-scrollbar { display: none; }
+  :where(.od-rail) > :where(*) { flex: none; scroll-snap-align: start; }
+  :where(.od-rail) > :where(:last-child) { margin-inline-end: var(--od-rail-pad, 16px); }
+
+  .od-spacer { flex: none; visibility: hidden; pointer-events: none; }
+  .od-touch  { min-width: 44px; min-height: 44px; }
+}
+/* /OD-LAYOUT-PRIMITIVES v1 */
+</style>
+<link rel="stylesheet" href="assets/theme.css">
+<style>
+  .disc { display: grid; gap: var(--s6); padding-top: var(--s7); padding-bottom: var(--s9); }
+  .filters { display: grid; gap: var(--s5); padding: var(--s5); background: var(--surface); border: 1px solid var(--line-10); border-radius: var(--r-lg); }
+  .fgroup { display: grid; gap: var(--s3); }
+  .flabel { display: block; font-size: var(--f-xs); font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted-fg); }
+  .results { display: grid; gap: var(--s4); grid-template-columns: 1fr; }
+  .kcard { display: grid; gap: var(--s4); }
+  .kcard-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--s3); }
+  .kcard-t { display: block; font-size: var(--f-2xl); font-weight: 500; color: var(--fg); }
+  .kcard-s { display: block; margin-top: var(--s2); font-size: var(--f-sm); color: var(--muted-fg); }
+  .kcard-brief { display: block; font-size: var(--f-sm); color: var(--fg-2); }
+  .facts { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s5); }
+  .fact { display: grid; gap: var(--s1); }
+  .fact-k { display: block; font-size: var(--f-xs); color: var(--muted-fg); }
+  .fact-v { display: block; font-size: var(--f-sm); color: var(--fg); }
+  .kcard-acts { display: flex; flex-wrap: wrap; gap: var(--s2); }
+  .applied { display: inline-flex; align-items: center; gap: 6px; font-size: var(--f-xs); color: var(--gold-lt); }
+  .count-t { display: block; font-size: var(--f-sm); color: var(--muted-fg); }
+  .range-note { display: grid; gap: var(--s2); padding: var(--s4); border: 1px dashed var(--gold-4d); border-radius: var(--r-md); background: var(--gold-38); }
+  .range-note-t { display: block; font-size: var(--f-sm); color: var(--fg); }
+  .range-note-s { display: block; font-size: var(--f-xs); color: var(--fg-2); }
+  @media (min-width: 768px) { .results { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 1200px) { .results { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+</style>
+</head>
+<body>
+<div class="bloom" aria-hidden="true"></div>
+
+<header class="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="index.html" aria-label="CollabTable home">
+      <span class="brand-a">COLLAB</span><span class="brand-b">TABLE</span>
+    </a>
+    <nav class="nav-links" aria-label="Primary">
+      <a class="nav-link" href="landing.html">Overview</a>
+      <a class="nav-link" href="discover-creators.html">For restaurants</a>
+      <a class="nav-link" href="discover-restaurants.html" aria-current="page">For creators</a>
+    </nav>
+    <div class="nav-actions">
+      <a class="btn btn-quiet" href="index.html">All screens</a>
+      <a class="btn btn-primary" href="influencer-dashboard.html">Creator dashboard</a>
+      <button class="burger" type="button" data-burger aria-expanded="false" aria-controls="mnav" aria-label="Open menu">
+        <span></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="mnav" id="mnav" data-mnav aria-hidden="true">
+  <a class="mnav-link" href="index.html">All screens</a>
+  <a class="mnav-link" href="landing.html">Overview</a>
+  <a class="mnav-link" href="discover-restaurants.html" aria-current="page">Discover restaurants</a>
+  <a class="mnav-link" href="influencer-dashboard.html">Creator dashboard</a>
+  <a class="mnav-link" href="campaign-detail.html">Campaign detail</a>
+</div>
+
+<main class="page">
+  <div class="wrap">
+    <div class="disc" data-filterable>
+
+      <div>
+        <span class="eyebrow eyebrow-gold">For creators</span>
+        <h1 class="h2">Discover restaurants &amp; campaigns</h1>
+        <p class="lede mt-6">Every campaign publishes its budget range before you apply. Apply with a
+          rate inside that range, negotiate in the deal room, and get paid when the content is approved.</p>
+      </div>
+
+      <div class="hair" style="grid-template-columns:repeat(3,minmax(0,1fr))">
+        <div>
+          <span class="stat-n">5</span>
+          <span class="stat-c">Open campaigns match your filters</span>
+        </div>
+        <div>
+          <span class="stat-n amount-gold od-nowrap">₹20K–₹50K</span>
+          <span class="stat-c">Your rate card range</span>
+        </div>
+        <div>
+          <span class="stat-n stat-n-red">2</span>
+          <span class="stat-c">Applications still open</span>
+        </div>
+      </div>
+
+      <section class="filters" aria-label="Filters">
+        <div class="search">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input type="search" data-search placeholder="Search campaigns or restaurants" aria-label="Search campaigns">
+        </div>
+
+        <div class="fgroup">
+          <span class="flabel">Cuisine</span>
+          <div class="row-wrap" role="group" aria-label="Filter by cuisine" data-chipgroup="multi">
+            <button class="chip" type="button" data-tag="japanese" aria-pressed="true">Japanese</button>
+            <button class="chip" type="button" data-tag="street" aria-pressed="false">Street food</button>
+            <button class="chip" type="button" data-tag="south" aria-pressed="false">South Indian</button>
+            <button class="chip" type="button" data-tag="desserts" aria-pressed="false">Desserts</button>
+            <button class="chip" type="button" data-tag="cafe" aria-pressed="false">Cafe &amp; bakery</button>
+          </div>
+        </div>
+
+        <div class="fgroup">
+          <span class="flabel">City</span>
+          <div class="row-wrap" role="group" aria-label="Filter by city" data-chipgroup="single">
+            <button class="chip" type="button" data-tag="mumbai" aria-pressed="true">Mumbai</button>
+            <button class="chip" type="button" data-tag="pune" aria-pressed="false">Pune</button>
+          </div>
+        </div>
+
+        <div class="range-note">
+          <span class="range-note-t">Your range: ₹20K–₹50K</span>
+          <span class="range-note-s">Only campaigns that overlap your range are shown. A ₹24,000
+            application on this campaign sits comfortably inside the published band.</span>
+        </div>
+      </section>
+
+      <div>
+        <p class="count-t"><span data-count>5</span> campaigns match</p>
+
+        <div class="results mt-6">
+
+          <article class="card card-pad card-hover kcard" data-tags="japanese mumbai">
+            <div class="kcard-head">
+              <div style="min-width:0">
+                <div class="row-wrap">
+                  <span class="tag tag-red">Closing Sep 15</span>
+                  <span class="tag">Sakura House</span>
+                </div>
+                <h2 class="kcard-t mt-6">Weekend Japanese Experience</h2>
+                <p class="kcard-s">Mumbai · Shoot 12–14 Sep</p>
+              </div>
+              <span class="amount amount-gold od-nowrap">₹20K–₹50K</span>
+            </div>
+            <p class="kcard-brief">Launch campaign for the new tasting menu. Two reels and a story set,
+              shot across two weekend services. Brief is specific about must-shoot dishes.</p>
+            <div class="facts">
+              <span class="fact"><span class="fact-k">Deliverables</span><span class="fact-v">Reels, story set</span></span>
+              <span class="fact"><span class="fact-k">Restaurant</span><span class="fact-v">Sakura House</span></span>
+              <span class="fact"><span class="fact-k">Applications</span><span class="fact-v">Open</span></span>
+            </div>
+            <div class="kcard-acts">
+              <a class="btn btn-primary btn-sm" href="campaign-detail.html">View &amp; apply</a>
+              <span class="applied">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+                Applied at ₹20,000
+              </span>
+            </div>
+          </article>
+
+          <article class="card card-pad card-hover kcard" data-tags="desserts mumbai">
+            <div class="kcard-head">
+              <div style="min-width:0">
+                <div class="row-wrap">
+                  <span class="tag tag-gold">Closing Sep 20</span>
+                  <span class="tag">Sana M.</span>
+                </div>
+                <h2 class="kcard-t mt-6">Dessert Menu Refresh</h2>
+                <p class="kcard-s">Mumbai · Shoot 20–22 Sep</p>
+              </div>
+              <span class="amount amount-gold od-nowrap">₹20K–₹35K</span>
+            </div>
+            <p class="kcard-brief">Re-shoot the dessert menu with new styling. One reel and one feed
+              post, plus close-ups of each plated finish.</p>
+            <div class="facts">
+              <span class="fact"><span class="fact-k">Deliverables</span><span class="fact-v">Reel, feed post</span></span>
+              <span class="fact"><span class="fact-k">Restaurant</span><span class="fact-v">Sana M.</span></span>
+              <span class="fact"><span class="fact-k">Applications</span><span class="fact-v">Open</span></span>
+            </div>
+            <div class="kcard-acts">
+              <a class="btn btn-primary btn-sm" href="campaign-detail.html">View &amp; apply</a>
+              <span class="applied">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+                Applied at ₹24,000
+              </span>
+            </div>
+          </article>
+
+          <article class="card card-pad card-hover kcard" data-tags="street mumbai">
+            <div class="kcard-head">
+              <div style="min-width:0">
+                <div class="row-wrap">
+                  <span class="tag">Closing Sep 28</span>
+                  <span class="tag">Tandoor Nights</span>
+                </div>
+                <h2 class="kcard-t mt-6">Street Food Fridays</h2>
+                <p class="kcard-s">Mumbai · Shoot 26–28 Sep</p>
+              </div>
+              <span class="amount amount-gold od-nowrap">₹15K–₹28K</span>
+            </div>
+            <p class="kcard-brief">Weekly evening service coverage for a street-food counter. Two reels per
+              Friday, handheld and fast-cut.</p>
+            <div class="facts">
+              <span class="fact"><span class="fact-k">Deliverables</span><span class="fact-v">Reels</span></span>
+              <span class="fact"><span class="fact-k">Restaurant</span><span class="fact-v">Tandoor Nights</span></span>
+              <span class="fact"><span class="fact-k">Applications</span><span class="fact-v">Open</span></span>
+            </div>
+            <div class="kcard-acts">
+              <a class="btn btn-primary btn-sm" href="campaign-detail.html">View &amp; apply</a>
+              <span class="applied">Counter-offer at ₹19,000</span>
+            </div>
+          </article>
+
+          <article class="card card-pad card-hover kcard" data-tags="south mumbai">
+            <div class="kcard-head">
+              <div style="min-width:0">
+                <div class="row-wrap">
+                  <span class="tag">Closing Oct 4</span>
+                  <span class="tag">Udupi Corner</span>
+                </div>
+                <h2 class="kcard-t mt-6">Breakfast Menu Shoot</h2>
+                <p class="kcard-s">Mumbai · Shoot 2–4 Oct</p>
+              </div>
+              <span class="amount amount-gold od-nowrap">₹18K–₹32K</span>
+            </div>
+            <p class="kcard-brief">Dosa, filter coffee, and the breakfast counter. Morning light, two
+              reels plus a story set.</p>
+            <div class="facts">
+              <span class="fact"><span class="fact-k">Deliverables</span><span class="fact-v">Reels, story set</span></span>
+              <span class="fact"><span class="fact-k">Restaurant</span><span class="fact-v">Udupi Corner</span></span>
+              <span class="fact"><span class="fact-k">Applications</span><span class="fact-v">Open</span></span>
+            </div>
+            <div class="kcard-acts">
+              <a class="btn btn-primary btn-sm" href="campaign-detail.html">View &amp; apply</a>
+            </div>
+          </article>
+
+          <article class="card card-pad card-hover kcard" data-tags="cafe pune">
+            <div class="kcard-head">
+              <div style="min-width:0">
+                <div class="row-wrap">
+                  <span class="tag">Closing Oct 9</span>
+                  <span class="tag">Mill &amp; Co.</span>
+                </div>
+                <h2 class="kcard-t mt-6">Bakery Case Refresh</h2>
+                <p class="kcard-s">Pune · Shoot 6–9 Oct</p>
+              </div>
+              <span class="amount amount-gold od-nowrap">₹14K–₹26K</span>
+            </div>
+            <p class="kcard-brief">Pastry case and bakery counter for a new outlet. Weekday afternoon
+              coverage, one reel and one feed post.</p>
+            <div class="facts">
+              <span class="fact"><span class="fact-k">Deliverables</span><span class="fact-v">Reel, feed post</span></span>
+              <span class="fact"><span class="fact-k">Restaurant</span><span class="fact-v">Mill &amp; Co.</span></span>
+              <span class="fact"><span class="fact-k">Applications</span><span class="fact-v">Open</span></span>
+            </div>
+            <div class="kcard-acts">
+              <a class="btn btn-primary btn-sm" href="campaign-detail.html">View &amp; apply</a>
+            </div>
+          </article>
+
+        </div>
+
+        <div class="empty panel mt-6" data-empty hidden>
+          <span class="well well-line" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          </span>
+          <span class="empty-t">No campaigns match these filters</span>
+          <span class="empty-s">Only campaigns whose published range overlaps your ₹20K–₹50K rate
+            card are shown. Try another cuisine or city.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer-btm">
+      <span>CollabTable prototype — discover restaurants and campaigns.</span>
+      <span>All amounts in Indian rupees (₹).</span>
+    </div>
+  </div>
+</footer>
+
+<div class="scrim" data-scrim></div>
+<script src="assets/app.js"></script>
+</body>
+</html>
