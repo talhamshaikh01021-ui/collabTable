@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deal flow test — CollabTable</title>
+<meta name="description" content="Test surface for the campaign deal room: the restaurant and the creator side by side on the same campaign, so the whole lifecycle can be checked in one place.">
+<meta name="theme-color" content="#FE002A">
+<style>
+/* OD-LAYOUT-PRIMITIVES v1 — structure only: display, flex/grid, overflow, wrapping, ratio.
+   Put this @layer first; product CSS outside the layer always wins. */
+@layer od-layout {
+  :where(.od-stack,.od-row,.od-row-top,.od-cluster,.od-grid,.od-field,.od-stat,.od-cell,.od-tile) > :where(*) { min-width: 0; }
+
+  /* containers */
+  .od-stack   { display: flex; flex-direction: column; gap: var(--od-gap, 8px); }
+  .od-row     { display: flex; align-items: center; gap: var(--od-gap, 8px); }
+  .od-row-top { display: flex; align-items: flex-start; gap: var(--od-gap, 8px); }
+  .od-cluster { display: flex; flex-wrap: wrap; align-items: center; gap: var(--od-gap, 8px); }
+  .od-fill    { flex: 1 1 0; min-width: 0; }
+  .od-fixed   { flex: none; }
+  .od-grid    { display: grid; gap: var(--od-gap, 12px); grid-template-columns: repeat(var(--od-cols, 3), minmax(0, 1fr)); }
+
+  /* stacked information: each piece is its own line — never sibling inline spans */
+  .od-stat, .od-field, .od-cell { display: grid; gap: var(--od-gap, 2px); }
+  :where(.od-stat,.od-field,.od-cell) > :where(*) { display: block; }
+  .od-tile { display: grid; grid-template-rows: auto 1fr; }
+  :where(.od-tile) > :where(*) { display: block; }
+
+  /* media keeps its intrinsic ratio by default; never a distorted or cropped
+     cover by accident. height:auto lets the ratio win over an <img height="…">
+     attribute. Cropping to a uniform box is an explicit opt-in: set --od-ratio
+     AND add .od-media-cover together (per the core rule, only where a crop is
+     deliberate — tile thumbs, decorative fills — never on full-frame content). */
+  .od-media { display: block; width: 100%; height: auto; aspect-ratio: var(--od-ratio, auto); }
+  .od-media-cover { object-fit: cover; }
+
+  /* data text only — authored copy is rewritten to its budget instead */
+  .od-truncate { display: block; max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .od-clamp-2, .od-clamp-3 { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+  .od-clamp-2 { -webkit-line-clamp: 2; }
+  .od-clamp-3 { -webkit-line-clamp: 3; }
+  .od-lines-2 { min-height: calc(2 * 1.4em); }   /* block-level reservation for a shared baseline */
+  .od-nowrap  { white-space: nowrap; }           /* 数字+单位 · 价格+起 · 日期+星期 */
+  .od-keep    { word-break: keep-all; overflow-wrap: anywhere; } /* CJK labels break at spaces / <wbr> first */
+
+  /* screen skeleton (optional): bars take their own space, the middle scrolls — no padding guessed for chrome */
+  .od-screen { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; height: 100%; }
+  .od-scroll { overflow-y: auto; overscroll-behavior: contain; min-height: 0; }
+
+  /* horizontal rail: the next item peeks at the edge; trailing room survives overflow */
+  .od-rail { display: flex; gap: var(--od-gap, 8px); overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none;
+             padding-inline: var(--od-rail-pad, 16px); scroll-padding-inline: var(--od-rail-pad, 16px); }
+  .od-rail::-webkit-scrollbar { display: none; }
+  :where(.od-rail) > :where(*) { flex: none; scroll-snap-align: start; }
+  :where(.od-rail) > :where(:last-child) { margin-inline-end: var(--od-rail-pad, 16px); }
+
+  .od-spacer { flex: none; visibility: hidden; pointer-events: none; }
+  .od-touch  { min-width: 44px; min-height: 44px; }
+}
+/* /OD-LAYOUT-PRIMITIVES v1 */
+</style>
+<link rel="stylesheet" href="assets/theme.css">
+<style>
+  /* This page exists to make the deal room checkable, so it opts out of the
+     pop-up layout the product uses: two rooms sit in the page flow, always
+     open, each labelled with the side it represents. */
+  body { padding-bottom: 48px; }
+
+  .tst-intro { max-width: 62ch; }
+  .tst-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+    background: var(--surface);
+    border: 1px solid var(--line-10);
+    border-radius: var(--r-lg);
+  }
+  .tst-bar-sp { flex: 1 1 0; min-width: 0; }
+  .tst-state {
+    font-size: var(--f-sm);
+    color: var(--fg-2);
+  }
+  .tst-state code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.95em;
+    color: var(--fg);
+  }
+
+  .tst-panes {
+    display: grid;
+    gap: 20px;
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+  @media (min-width: 1100px) {
+    .tst-panes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  .tst-pane {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .tst-pane-head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 12px 16px;
+    background: var(--surface-2);
+    border: 1px solid var(--line-10);
+    border-bottom: 0;
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+  }
+  .tst-pane-head h2 { margin: 0; font-size: var(--f-sm); font-weight: 500; }
+  .tst-side {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--fg-5);
+  }
+  .tst-pane-body {
+    display: block;
+    min-width: 0;
+    padding: 0;
+    background: var(--surface);
+    border: 1px solid var(--line-10);
+    border-radius: 0 0 var(--r-lg) var(--r-lg);
+  }
+
+  /* A room on this page is a panel, not a dialog: no centering transform, no
+     hidden state, and it grows with its own content so both sides stay readable
+     at the same time. */
+  .sheet-deal[data-deal-panel] {
+    position: relative;
+    inset: auto;
+    transform: none;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    width: auto;
+    max-width: none;
+    max-height: none;
+    /* the review overlay is a 1fr grid, so the panel needs a floor to divide
+       rather than collapsing to its own content */
+    min-height: 720px;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    transition: none;
+  }
+  .sheet-deal[data-deal-panel]::before { display: none; }
+  /* The close button has nothing to close here — the panel stays open so the
+     two sides can be read against each other. */
+  .sheet-deal[data-deal-panel] [data-sheet-close] { display: none; }
+  .sheet-deal[data-deal-panel] .sheet-head { position: static; }
+  /* Nested overlays fill the room, which is now `position: relative`, so the
+     counter, contract and review overlays stay scoped to their own panel instead
+     of escaping to the page. */
+  .sheet-deal[data-deal-panel] .dr-sub,
+  .sheet-deal[data-deal-panel] .dr-review { position: absolute; inset: 0; }
+
+  .tst-steps { margin: 0; padding-left: 20px; color: var(--fg-2); }
+  .tst-steps li { margin-bottom: 6px; }
+  .tst-note {
+    margin-top: 24px;
+    padding: 16px;
+    background: var(--surface-2);
+    border: 1px solid var(--line-10);
+    border-radius: var(--r-lg);
+    color: var(--fg-2);
+  }
+</style>
+</head>
+<body>
+<div class="bloom" aria-hidden="true"></div>
+
+<header class="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="index.html" aria-label="CollabTable home">
+      <span class="brand-a">COLLAB</span><span class="brand-b">TABLE</span>
+    </a>
+    <nav class="nav-links" aria-label="Primary">
+      <a class="nav-link" href="landing.html">Overview</a>
+      <a class="nav-link" href="discover-creators.html">For restaurants</a>
+      <a class="nav-link" href="restaurant-dashboard.html">For restaurants</a>
+    </nav>
+    <div class="nav-actions">
+      <a class="btn btn-quiet" href="index.html">All screens</a>
+    </div>
+  </div>
+</header>
+
+<main class="page">
+  <div class="wrap">
+
+    <div class="od-stack tst-intro" style="--od-gap: 10px;">
+      <span class="eyebrow eyebrow-red">Test surface</span>
+      <h2 class="h2">Deal flow, both sides at once</h2>
+      <p class="lede">The restaurant and the creator are two separate rooms in the product, which
+        makes one hard thing to check: whether a move on one side actually reaches the other.
+        Here both sides run on the same campaign in one page, so a counter, an acceptance and
+        the payment are visible on both sides as they happen.</p>
+    </div>
+
+    <div class="tst-bar mt-8">
+      <span class="tst-state">Campaign <code>weekend-japanese</code> ·
+        storage <code data-tst-storage>checking…</code></span>
+      <span class="tst-bar-sp"></span>
+      <button class="btn btn-ghost btn-sm" type="button" data-tst-reset>Reset this deal</button>
+    </div>
+
+    <div class="tst-panes">
+
+      <section class="tst-pane" aria-labelledby="tst-restaurant-h">
+        <div class="tst-pane-head">
+          <h2 class="h4" id="tst-restaurant-h">Restaurant</h2>
+          <span class="tst-side">Sahyadri Kitchen</span>
+        </div>
+        <div class="tst-pane-body">
+          <div class="sheet sheet-deal" id="deal-room-restaurant" role="region"
+               aria-labelledby="deal-room-restaurant-t" data-deal data-deal-panel
+               data-deal-role="restaurant" data-deal-link="weekend-japanese"></div>
+        </div>
+      </section>
+
+      <section class="tst-pane" aria-labelledby="tst-creator-h">
+        <div class="tst-pane-head">
+          <h2 class="h4" id="tst-creator-h">Creator</h2>
+          <span class="tst-side">Ananya · Mumbai</span>
+        </div>
+        <div class="tst-pane-body">
+          <div class="sheet sheet-deal" id="deal-room-creator" role="region"
+               aria-labelledby="deal-room-creator-t" data-deal data-deal-panel
+               data-deal-role="creator" data-deal-link="weekend-japanese"></div>
+        </div>
+      </section>
+
+    </div>
+
+    <div class="tst-note">
+      <h2 class="h4">What to check</h2>
+      <ol class="tst-steps mt-4">
+        <li><strong>Counter.</strong> Counter from either side. The other side should show the
+          new number, swap to its waiting message, and grey out its Accept and Counter buttons
+          until it answers.</li>
+        <li><strong>Accept.</strong> Accept on the other side. Both sides should return to live
+          controls and the counters should read each side's figure.</li>
+        <li><strong>Pay.</strong> <em>Pay Now</em> appears for the restaurant only. It goes
+          UNPAID → PENDING → PAID and the contract opens on both sides.</li>
+        <li><strong>Masking.</strong> Before payment, no name, email, handle, address or avatar
+          appears anywhere in either room. After it, the contract shows them.</li>
+        <li><strong>Deliverables.</strong> Upload a file as the creator, then review it from the
+          restaurant. The restaurant's single <em>Request Edits</em> request locks once used.</li>
+      </ol>
+    </div>
+
+  </div>
+</main>
+
+<script src="assets/app.js"></script>
+<script>
+  /* Reads the store's own health flag rather than probing storage a second
+     time, so the page and the room can never disagree about it. */
+  (function () {
+    var out = document.querySelector('[data-tst-storage]');
+    if (out && window.ctDealStoreLive) {
+      out.textContent = window.ctDealStoreLive() ? 'saved' : 'in memory only';
+    }
+
+    var reset = document.querySelector('[data-tst-reset]');
+    if (!reset) return;
+    reset.addEventListener('click', function () {
+      if (!window.ctDealReset) return;
+      window.ctDealReset();
+      reset.textContent = 'Reset';
+      window.setTimeout(function () { reset.textContent = 'Reset this deal'; }, 1200);
+    });
+  })();
+</script>
+</body>
+</html>

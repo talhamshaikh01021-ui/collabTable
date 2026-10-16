@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<script>try{var ct=localStorage.getItem('ct-theme')||(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',ct);}catch(e){document.documentElement.setAttribute('data-theme','light');}</script>
+<title>CollabTable — Deal Room</title>
+<style>
+  :root {
+    --bg:      oklch(97.5% 0.016 60);
+    --surface: oklch(100% 0 0);
+    --fg:      oklch(21% 0.035 300);
+    --muted:   oklch(52% 0.03 290);
+    --border:  oklch(90% 0.022 300);
+    --accent:  oklch(58% 0.19 304);
+    --good:    oklch(52% 0.13 152);
+    --warn:    oklch(60% 0.16 70);
+    --danger:  oklch(52% 0.18 28);
+    --accent-soft: color-mix(in oklch, var(--accent) 12%, transparent);
+    --on-solid:   oklch(100% 0 0);
+    --fg-soft:     color-mix(in oklch, var(--fg) 5%, transparent);
+    --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+    --font-body:    -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+    --font-mono:    ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace;
+    --radius: 14px;
+    --radius-lg: 24px;
+  }
+  *,*::before,*::after{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;}
+  a{color:inherit;text-decoration:none;} button{font:inherit;cursor:pointer;} p{text-wrap:pretty;} h1,h2,h3{text-wrap:balance;}
+  .top{display:flex;align-items:center;justify-content:space-between;padding:12px 28px;border-bottom:1px solid var(--border);background:var(--surface);}
+  .logo{font-weight:700;font-size:16px;display:flex;align-items:center;gap:10px;}
+  .logo .mark{width:26px;height:26px;border-radius:8px;background:var(--accent);color:var(--on-solid);display:grid;place-items:center;font-family:var(--font-mono);font-size:13px;}
+  .crumb{font-size:13px;color:var(--muted);}
+  .crumb b{color:var(--fg);font-weight:600;}
+  .wrap{max-width:1080px;margin:0 auto;padding:26px 28px;}
+  .head{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+  .avatar{width:50px;height:50px;border-radius:14px;background:var(--accent-soft);display:grid;place-items:center;font-family:var(--font-mono);font-size:15px;color:var(--accent);font-weight:700;}
+  h1{font-size:24px;letter-spacing:-0.02em;margin:0;}
+  .sub{color:var(--muted);font-size:13.5px;margin-top:2px;}
+  .status{margin-left:auto;display:inline-flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:12px;color:var(--warn);}
+  .status .dotp{width:9px;height:9px;border-radius:50%;background:var(--warn);display:inline-block;}
+  .tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin:22px 0 24px;overflow-x:auto;}
+  .tabs button{padding:11px 16px;border:0;background:transparent;font-size:14px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;white-space:nowrap;}
+  .tabs button.on{color:var(--accent);border-bottom-color:var(--accent);}
+  .tab{display:none;}
+  .tab.on{display:block;}
+  .cols{display:grid;grid-template-columns:1.1fr 1fr;gap:22px;align-items:start;}
+  @media(max-width:920px){.cols{grid-template-columns:1fr;}}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:22px;}
+  .card h2{font-size:16px;letter-spacing:-0.01em;margin:0 0 4px;}
+  .card .hd-sub{color:var(--muted);font-size:13px;margin-bottom:16px;}
+  .offer{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px;}
+  .offer .lbl{font-family:var(--font-mono);font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+  .rowl{display:flex;justify-content:space-between;gap:12px;padding:7px 0;font-size:14px;}
+  .rowl .k{color:var(--muted);}
+  .rowl .v{font-weight:600;}
+  .rowl .v.total{font-size:19px;font-family:var(--font-mono);letter-spacing:-0.02em;}
+  .rule{border:0;border-top:1px solid var(--border);margin:12px 0;}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 18px;border-radius:var(--radius);border:1px solid transparent;font-size:14.5px;font-weight:600;text-decoration:none;transition:background .15s;cursor:pointer;}
+  .btn:active{transform:translateY(1px);}
+  .btn-primary{background:var(--accent);color:var(--on-solid);border-color:var(--accent);}
+  .btn-primary:hover{background:color-mix(in oklch,var(--accent) 86%,black);}
+  .btn-outline{background:transparent;color:var(--fg);border-color:var(--border);}
+  .btn-outline:hover{border-color:var(--fg);}
+  .btn-ghost{background:transparent;color:var(--muted);border-color:transparent;}
+  .btn-ghost:hover{color:var(--danger);}
+  .btn-row{display:flex;gap:10px;}
+  .count-att{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--danger);color:var(--on-solid);border-radius:var(--radius);font-size:12.5px;margin-top:14px;display:none;}
+  .count-att b{font-weight:700;}
+  .count-att.on{display:flex;}
+  .count-att svg{width:16px;height:16px;}
+  .exp{font-family:var(--font-mono);font-size:11px;color:var(--muted);}
+  /* contract */
+  .agreement{font-size:14px;color:var(--fg);}
+  .agreement h3{font-size:13px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.05em;color:var(--accent);margin:18px 0 6px;}
+  .agreement p{margin:0 0 8px;color:var(--fg);}
+  .agreement li{margin-bottom:6px;}
+  .sign{display:flex;align-items:center;gap:14px;padding:16px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);margin-top:20px;}
+  .sign .field{flex:1;display:flex;flex-direction:column;gap:6px;}
+  .sign .field label{font-size:12px;color:var(--muted);}
+  .sign input{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);font:inherit;font-size:14px;}
+  .signed{border-color:var(--good);background:color-mix(in oklch,var(--good) 8%,var(--surface));}
+  /* payment */
+  .esc{display:flex;align-items:center;justify-content:space-between;padding:16px;border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;background:var(--bg);}
+  .esc .amt{font-family:var(--font-mono);font-size:22px;font-weight:700;letter-spacing:-0.02em;}
+  .esc .stt{font-size:13px;color:var(--muted);}
+  .esc .tag{font-family:var(--font-mono);font-size:12px;font-weight:700;padding:5px 11px;border-radius:999px;}
+  .tag.sec{background:var(--good);color:var(--on-solid);}
+  .tag.hold{background:var(--warn);color:var(--on-solid);}
+  .steps{margin:14px 0;}
+  .stepn{display:flex;gap:14px;padding:10px 0;}
+  .stepn .st{width:26px;height:26px;border-radius:50%;background:var(--good);color:var(--on-solid);display:grid;place-items:center;font-family:var(--font-mono);font-size:12px;}
+  .stepn .st.pen{background:var(--border);color:var(--muted);}
+  .stepn .nm{font-weight:600;font-size:14px;}
+  .stepn .ds{color:var(--muted);font-size:13px;}
+  .fee-line{display:flex;justify-content:space-between;padding:8px 0;font-size:13.5px;border-top:1px solid var(--border);}
+  .net{font-family:var(--font-mono);font-weight:700;font-size:15px;color:var(--good);}
+  /* chat */
+  .chat{display:flex;flex-direction:column;height:460px;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;}
+  .msgs{flex:1;overflow:auto;padding:18px;display:flex;flex-direction:column;gap:12px;background:var(--surface);}
+  .msg{max-width:78%;padding:10px 14px;border-radius:14px;font-size:14px;}
+  .msg.me{align-self:flex-end;background:var(--accent);color:var(--on-solid);border-bottom-right-radius:4px;}
+  .msg.them{align-self:flex-start;background:var(--fg-soft);color:var(--fg);border-bottom-left-radius:4px;}
+  .msg.blocked{align-self:stretch;width:100%;max-width:100%;background:var(--accent-soft);border:1px dashed var(--accent);color:var(--fg);font-size:13px;display:flex;gap:8px;align-items:flex-start;}
+  .msg.blocked svg{width:16px;height:16px;color:var(--accent);flex:none;margin-top:2px;}
+  .msg .who{font-family:var(--font-mono);font-size:10.5px;opacity:.7;margin-bottom:3px;}
+  .composer{display:flex;gap:10px;padding:12px;border-top:1px solid var(--border);background:var(--bg);}
+  .composer input{flex:1;padding:11px 14px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);font:inherit;font-size:14px;}
+  .composer input:focus{outline:2px solid var(--accent-soft);border-color:var(--accent);}
+  .composer button{padding:11px 20px;border:0;border-radius:var(--radius);background:var(--accent);color:var(--on-solid);font-weight:600;font-size:14px;}
+  .shield{display:flex;align-items:center;gap:7px;font-family:var(--font-mono);font-size:11px;color:var(--muted);padding:10px 14px;background:var(--bg);border-top:1px solid var(--border);}
+  .shield svg{width:13px;height:13px;}
+  /* content */
+  .dl{display:flex;align-items:center;gap:14px;padding:14px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);margin-bottom:12px;}
+  .dl .ic{width:40px;height:40px;border-radius:10px;background:var(--accent-soft);display:grid;place-items:center;color:var(--accent);}
+  .dl .ic svg{width:18px;height:18px;}
+  .dl .nm{font-weight:600;font-size:14px;}
+  .dl .st{font-size:12.5px;color:var(--muted);margin-top:2px;}
+  .dl .st.done{color:var(--good);font-weight:600;}
+  .dl .st.pend{color:var(--warn);}
+  .dl .stat{margin-left:auto;}
+  .thumb{width:60px;height:60px;border-radius:10px;background:var(--fg-soft);position:relative;}
+  .meta{font-family:var(--font-mono);font-size:12px;color:var(--muted);}
+  .num{font-family:var(--font-mono);font-variant-numeric:tabular-nums;}
+  .pill{display:inline-flex;align-items:center;padding:4px 10px;border-radius:999px;font-family:var(--font-mono);font-size:11px;background:var(--accent-soft);color:var(--accent);}
+  .field{display:flex;flex-direction:column;gap:6px;}
+  .field label{font-size:12.5px;color:var(--muted);}
+  .input,.select,.textarea{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--fg);font:inherit;font-size:14px;}
+  .textarea{min-height:80px;resize:vertical;}
+  .tag{display:inline-flex;align-items:center;padding:5px 12px;border:1px solid var(--border);border-radius:999px;font-size:11.5px;color:var(--muted);background:var(--surface);}
+  .note{background:var(--fg-soft);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;font-size:13px;color:var(--fg);margin-top:14px;}
+</style>
+</head>
+<body>
+<div class="top"><div style="display:flex;align-items:center;gap:14px;width:100%;justify-content:space-between;">
+  <div style="display:flex;align-items:center;gap:12px;">
+    <span class="logo"><span class="mark">C</span>CollabTable</span>
+    <span class="crumb">Deal room · <b>Weekend Japanese Experience</b></span>
+  </div>
+  <a class="meta" href="index.html" style="font-family:var(--font-mono);font-size:12px;color:var(--muted);">← Prototype index</a>
+</div></div>
+
+<div class="wrap">
+  <div class="head">
+    <div class="avatar">SH</div>
+    <div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;"><h1>Weekend Japanese Experience</h1><span class="pill">Negotiating</span></div>
+      <div class="sub">Sakura House · Bandra × Creator Ananya · Food creator, Mumbai</div>
+    </div>
+    <span class="status"><span class="dotp"></span>Offer expires in 38h</span>
+  </div>
+
+  <div class="tabs" data-od-id="tabs">
+    <button class="on" data-t="negotiate">Negotiate</button>
+    <button data-t="contract">Contract</button>
+    <button data-t="chat">Chat</button>
+    <button data-t="content">Content</button>
+    <button data-t="payment">Payment</button>
+  </div>
+
+  <!-- NEGOTIATE -->
+  <div class="tab on" data-tab="negotiate" data-od-id="tab-negotiate">
+    <div class="cols">
+      <div class="card">
+        <h2>Current offer</h2>
+        <div class="hd-sub">From Sakura House · sent 2h ago</div>
+        <div class="offer">
+          <div class="lbl">Deliverables</div>
+          <div class="rowl"><span class="k">1 Reel</span><span class="v">15–30s · feed</span></div>
+          <div class="rowl"><span class="k">3 Stories</span><span class="v">sequential</span></div>
+          <div class="rule"></div>
+          <div class="rowl"><span class="k">Payment</span><span class="v total num">₹20,000</span></div>
+          <div class="rowl"><span class="k">Restaurant visit</span><span class="v">Included</span></div>
+          <div class="rowl"><span class="k">Content deadline</span><span class="v">Sept 15</span></div>
+          <div class="rowl"><span class="k">Revisions</span><span class="v">1</span></div>
+          <div class="rowl"><span class="k">Usage rights</span><span class="v">30 days</span></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" style="flex:1;" onclick="document.getElementById('acceptToast').classList.add('on')">Accept</button>
+          <button class="btn btn-outline" style="flex:1;" onclick="document.getElementById('counterPanel').style.display='block'">Counter Offer</button>
+          <button class="btn btn-ghost">Decline</button>
+        </div>
+        <div id="acceptToast" style="display:none;background:color-mix(in oklch,var(--good) 12%,var(--surface));border:1px solid var(--good);color:var(--fg);border-radius:var(--radius);padding:12px 14px;font-size:13.5px;margin-top:14px;">Agreement generated — review &amp; sign in the <b>Contract</b> tab.</div>
+      </div>
+
+      <div class="card" id="counterPanel" style="display:none;">
+        <h2>Send counter offer</h2>
+        <div class="hd-sub">Adjust the terms Sakura House proposed</div>
+        <div class="field" style="margin-bottom:12px;"><label>Your proposed fee (₹)</label><input class="input num" value="₹25,000" /></div>
+        <div class="field" style="margin-bottom:12px;"><label>Deliverables</label><div style="display:flex;flex-direction:column;gap:8px;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--fg);"><input type="checkbox" checked> 1 Reel</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--fg);"><input type="checkbox" checked> 3 Stories</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--fg);"><input type="checkbox"> 1 Feed post</label>
+        </div></div>
+        <div class="field" style="margin-bottom:12px;"><label>Note to Sakura House</label><textarea class="textarea">I can include a feed post and a longer-form reel for the higher fee. Will cover the tasting menu.</textarea></div>
+        <div class="btn-row"><button class="btn btn-outline" onclick="document.getElementById('counterPanel').style.display='none'">Cancel</button><button class="btn btn-primary" onclick="document.getElementById('counterSent').style.display='block';document.getElementById('counterPanel').style.display='none'">Send Counter Offer</button></div>
+        <div id="counterSent" style="display:none;background:color-mix(in oklch,var(--good) 12%,var(--surface));border:1px solid var(--good);border-radius:var(--radius);padding:12px 14px;font-size:13.5px;margin-top:12px;">Counter offer sent to Sakura House. They must respond within 48h.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTRACT -->
+  <div class="tab" data-tab="contract" data-od-id="tab-contract">
+    <div class="cols">
+      <div class="card">
+        <h2>Collaboration agreement</h2>
+        <div class="hd-sub">Auto-generated from the agreed offer · reviewed by both parties</div>
+        <div class="agreement">
+          <h3>Parties</h3>
+          <p><b>Sakura House</b> (Bandra West, Mumbai) and <b>Creator Ananya</b> (Food creator, Mumbai)</p>
+          <h3>Campaign</h3>
+          <p>Weekend Japanese Experience — 1 Reel + 3 Stories for the new autumn tasting menu campaign.</p>
+          <h3>Payment</h3>
+          <p>₹20,000 held in escrow. Released to the creator after <b>restaurant approval</b> of all deliverables.</p>
+          <h3>Deadlines &amp; revisions</h3>
+          <p>Content by Sept 15. One revision round included; further rounds by mutual agreement.</p>
+          <h3>Content ownership &amp; usage</h3>
+          <p>Creator retains ownership of the raw content. Restaurant receives a 30-day usage licence for the campaign.</p>
+          <h3>Disclosure</h3>
+          <p>The creator discloses the partnership as a paid collaboration (#ad / partnership) on-publish, as required.</p>
+          <h3>Platform rules</h3>
+          <p>All communication and payments occur through CollabTable. Direct contact or off-platform deal-making is prohibited and voids protection.</p>
+          <h3>Cancellation &amp; disputes</h3>
+          <p>Cancellation before content starts is free. Disputes are handled by CollabTable's moderated resolution process while payment remains escrowed.</p>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Review &amp; sign</h2>
+        <div class="hd-sub">Both parties must sign for the deal to start.</div>
+        <div class="sign" id="signBox">
+          <div class="field"><label>Your full name or display name</label><input value="Ananya Iyer" /></div>
+          <button class="btn btn-primary" style="flex:none;" onclick="document.getElementById('signBox').classList.add('signed');document.getElementById('signState').style.display='block';">Accept &amp; Sign</button>
+        </div>
+        <div id="signState" style="display:none;margin-top:16px;">
+          <div class="signed" style="background:color-mix(in oklch,var(--good) 8%,var(--surface));border:1px solid var(--good);border-radius:var(--radius);padding:14px;">
+            <div style="font-weight:700;color:var(--good);">✓ Signed by Creator Ananya</div>
+            <div class="meta" style="margin-top:4px;">Awaiting signature from Sakura House · deal won't start until both sign</div>
+          </div>
+          <div class="note" style="background:var(--fg-soft);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;font-size:13px;margin-top:12px;">Once both parties sign, escrow funding is enabled in the <b>Payment</b> tab.</div>
+        </div>
+        <div style="margin-top:18px;display:flex;gap:8px;flex-wrap:wrap;">
+          <span class="tag" style="padding:5px 12px;border:1px solid var(--border);border-radius:999px;font-size:11.5px;color:var(--muted);">1 revision</span>
+          <span class="tag" style="padding:5px 12px;border:1px solid var(--border);border-radius:999px;font-size:11.5px;color:var(--muted);">30-day usage</span>
+          <span class="tag" style="padding:5px 12px;border:1px solid var(--border);border-radius:999px;font-size:11.5px;color:var(--muted);">Disclosure required</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHAT -->
+  <div class="tab" data-tab="chat" data-od-id="tab-chat">
+    <div class="card" style="max-width:760px;margin:0 auto;">
+      <div class="chat">
+        <div class="msgs" id="msgs">
+          <div class="msg them"><div class="who">Sakura House</div>Hi Ananya! We loved your reel for Umami House. Would you be open to our Weekend Japanese Experience campaign?</div>
+          <div class="msg me"><div class="who">You</div>Absolutely — it's a great fit for my Bandra audience. I've applied with a proposed package.</div>
+          <div class="msg them"><div class="who">Sakura House</div>I've sent you a structured offer. Let me know if you'd like any changes.</div>
+          <div class="msg me"><div class="who">You</div>Perfect, reviewing now.</div>
+        </div>
+        <div class="composer">
+          <input id="chatInput" placeholder="Type a message…" />
+          <button onclick="sendMsg()">Send</button>
+        </div>
+        <div class="shield">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+          Message Safety Layer active — phone numbers, emails &amp; handles are blocked before delivery.
+        </div>
+      </div>
+      <div class="count-att" id="countAtt">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4m0 4h.01"/><path d="M10.3 3.9 2.2 18a2 2 0 0 0 1.7 3h16.2a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+        <span><b>Contact blocked.</b> "WhatsApp me at 98XXXXXXXX — find me on Instagram @xyz" can't be shared to protect both parties. Please continue here on CollabTable.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="tab" data-tab="content" data-od-id="tab-content">
+    <div class="cols">
+      <div class="card">
+        <h2>Deliverables</h2>
+        <div class="hd-sub">Creator uploads content; restaurant reviews &amp; approves</div>
+        <div class="dl">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 5V3h10v2M7 5v2M17 5v2"/></svg></div>
+          <div><div class="nm">Reel — tasting menu</div><div class="st done">✓ Uploaded · awaiting review</div></div>
+          <div class="thumb"></div>
+        </div>
+        <div class="dl">
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 5V3h10v2M7 5v2M17 5v2"/></svg></div>
+          <div><div class="nm">3 Stories sequence</div><div class="st pend">Not yet uploaded</div></div>
+        </div>
+        <button class="btn btn-outline" style="width:100%;">Upload deliverable</button>
+      </div>
+      <div class="card">
+        <h2>Approval flow</h2>
+        <div class="steps">
+          <div class="stepn"><span class="st">✓</span><div><div class="nm">Deliverable uploaded</div><div class="ds">1 of 2 done</div></div></div>
+          <div class="stepn"><span class="st pen">2</span><div><div class="nm">Restaurant reviews content</div><div class="ds">Awaiting Sakura House</div></div></div>
+          <div class="stepn"><span class="st pen">3</span><div><div class="nm">Approval releases payment</div><div class="ds">Funds held in escrow</div></div></div>
+        </div>
+        <div class="note" style="background:var(--accent-soft);border:1px solid var(--accent);border-radius:var(--radius);padding:12px 14px;font-size:13px;">Payment (₹20,000) stays in escrow until Sakura House approves every deliverable.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAYMENT -->
+  <div class="tab" data-tab="payment" data-od-id="tab-payment">
+    <div class="cols">
+      <div class="card">
+        <h2>Escrow &amp; release</h2>
+        <div class="hd-sub">Funds are protected until content is approved</div>
+        <div class="esc">
+          <div><div class="amt num">₹20,000</div><div class="stt">Agreed campaign fee</div></div>
+          <span class="tag sec">Secured in escrow</span>
+        </div>
+        <div class="steps">
+          <div class="stepn"><span class="st">✓</span><div><div class="nm">Restaurant funds ₹20,000</div><div class="ds">Held securely by CollabTable's regulated partner</div></div></div>
+          <div class="stepn"><span class="st">✓</span><div><div class="nm">Creator completes campaign</div><div class="ds">Content submitted for review</div></div></div>
+          <div class="stepn"><span class="st pen">3</span><div><div class="nm">Restaurant approves</div><div class="ds">Pending final content approval</div></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Payout preview</h2>
+        <div class="hd-sub">On approval, funds release as follows</div>
+        <div class="fee-line"><span>Campaign fee</span><span class="num">₹20,000</span></div>
+        <div class="fee-line"><span>Platform fee</span><span class="num" style="color:var(--muted);">− ₹2,000</span></div>
+        <div class="rule"></div>
+        <div class="fee-line"><span>Creator receives</span><span class="net num">₹18,000</span></div>
+        <div class="note" style="background:var(--accent-soft);border:1px solid var(--accent);border-radius:var(--radius);padding:12px 14px;font-size:13px;margin-top:14px;">Platform fee is charged on completed, approved campaigns only. No booking fee, no hidden charges.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('.tabs button').forEach(function(b){
+    b.addEventListener('click',function(){
+      document.querySelectorAll('.tabs button').forEach(function(x){x.classList.remove('on');});
+      b.classList.add('on');
+      showTab(b.getAttribute('data-t'));
+    });
+  });
+  function showTab(t){
+    document.querySelectorAll('.tab').forEach(function(tb){tb.classList.toggle('on',tb.getAttribute('data-tab')===t);});
+  }
+  var CONTACT_RE = /(\+?[0-9][0-9\s-]{7,}|[\w.\-]+@[\w.\-]+\.\w{2,}|wa\.me|whatsapp|instagram\.com|t\.me|telegram|@[\w]{2,}|https?:\/\/|upi\b)/i;
+  function sendMsg(){
+    var inp=document.getElementById('chatInput');
+    var val=inp.value.trim();
+    if(!val)return;
+    var msgs=document.getElementById('msgs');
+    var box=document.getElementById('countAtt');
+    if(CONTACT_RE.test(val)){
+      box.classList.add('on');
+      box.querySelector('span').innerHTML='<b>Contact blocked.</b> Contact details or handles ("'+val+'") can\'t be shared to protect both parties. Please continue the conversation here on CollabTable.';
+    }else{
+      var m=document.createElement('div');
+      m.className='msg me';m.innerHTML='<div class="who">You</div>'+escapeHtml(val);
+      msgs.appendChild(m);
+      msgs.scrollTop=msgs.scrollHeight;
+    }
+    inp.value='';
+  }
+  function escapeHtml(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+  (function(){
+    function toast(msg){var t=document.getElementById('ctToast');if(!t){t=document.createElement('div');t.id='ctToast';t.style.cssText='position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:1200;background:var(--fg);color:var(--bg);padding:11px 18px;border-radius:999px;font-size:13px;font-family:var(--font-mono);box-shadow:0 6px 24px rgba(0,0,0,.18);opacity:0;transition:opacity .25s;';document.body.appendChild(t);}t.textContent=msg;t.style.opacity='1';clearTimeout(t._t);t._t=setTimeout(function(){t.style.opacity='0';},2600);}
+    document.querySelectorAll('.btn-row .btn-ghost, .foot .btn-ghost').forEach(function(b){
+      if(b.textContent.trim().indexOf('Decline')>=0){
+        b.addEventListener('click',function(){toast('Offer declined. You can still reach out to this partner in-platform.');});
+      }
+    });
+    var upload=document.querySelector('.dl ~ .btn-outline');
+    if(upload){
+      upload.addEventListener('click',function(){
+        var story=[].slice.call(document.querySelectorAll('.dl')).find(function(el){return el.textContent.indexOf('3 Stories sequence')>=0;});
+        if(story){
+          var st=story.querySelector('.st');
+          st.textContent='✓ Uploaded · awaiting review';st.classList.remove('pend');st.style.color='var(--good)';
+        }
+        var firstStep=document.querySelector('.steps .stepn');
+        toast('Deliverable uploaded — restaurant can review it now.');
+      });
+    }
+  })();
+</script>
+<style>
+  :root[data-theme="dark"]{
+    --bg:      oklch(18% 0.025 295);
+    --surface: oklch(24% 0.03 295);
+    --fg:      oklch(93% 0.02 60);
+    --muted:   oklch(66% 0.03 280);
+    --border:  oklch(34% 0.035 295);
+    --accent:  oklch(68% 0.16 304);
+    --good:    oklch(64% 0.14 152);
+    --warn:    oklch(72% 0.16 70);
+    --danger:  oklch(66% 0.18 28);
+    --accent-soft: color-mix(in oklch, var(--accent) 18%, transparent);
+    --fg-soft:     color-mix(in oklch, var(--fg) 7%, transparent);
+  }
+  .theme-toggle{
+    position:fixed;top:14px;right:14px;z-index:1000;
+    display:inline-flex;align-items:center;gap:8px;
+    padding:8px 13px;border:1px solid var(--border);border-radius:999px;
+    background:var(--surface);color:var(--fg);
+    font-family:var(--font-mono);font-size:12px;font-weight:600;
+    letter-spacing:.04em;text-transform:uppercase;cursor:pointer;
+    box-shadow:0 2px 14px color-mix(in oklch, var(--fg) 12%, transparent);
+  }
+  .theme-toggle:hover{background:var(--accent-soft);}
+</style>
+<button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle colour theme">
+  <span id="themeLabel">Dark</span>
+</button>
+<script>
+  (function(){
+    var root=document.documentElement;
+    function applyTheme(t){
+      root.setAttribute('data-theme',t);
+      try{localStorage.setItem('ct-theme',t);}catch(e){}
+      var lab=document.getElementById('themeLabel');
+      if(lab){lab.textContent=(t==='dark')?'Light':'Dark';}
+    }
+    try{
+      var saved=localStorage.getItem('ct-theme');
+      if(saved){applyTheme(saved);}
+      else if(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches){applyTheme('dark');}
+      else{applyTheme('light');}
+    }catch(e){applyTheme('light');}
+    var btn=document.getElementById('themeToggle');
+    if(btn){btn.addEventListener('click',function(){
+      applyTheme(root.getAttribute('data-theme')==='dark'?'light':'dark');
+    });}
+  })();
+</script>
+</body>
+
+</html>

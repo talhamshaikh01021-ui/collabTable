@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<script>try{var ct=localStorage.getItem('ct-theme')||(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',ct);}catch(e){document.documentElement.setAttribute('data-theme','light');}</script>
+<title>CollabTable — Influencer Dashboard</title>
+<style>
+  :root {
+    --bg:      oklch(97.5% 0.016 60);
+    --surface: oklch(100% 0 0);
+    --fg:      oklch(21% 0.035 300);
+    --muted:   oklch(52% 0.03 290);
+    --border:  oklch(90% 0.022 300);
+    --accent:  oklch(58% 0.19 304);
+    --good:    oklch(52% 0.13 152);
+    --accent-soft: color-mix(in oklch, var(--accent) 12%, transparent);
+    --on-solid:   oklch(100% 0 0);
+    --fg-soft:     color-mix(in oklch, var(--fg) 5%, transparent);
+    --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+    --font-body:    -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+    --font-mono:    ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace;
+    --radius: 14px;
+    --radius-lg: 24px;
+  }
+  *,*::before,*::after{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;}
+  a{color:inherit;text-decoration:none;} button{font:inherit;cursor:pointer;} p{text-wrap:pretty;} h1,h2,h3{text-wrap:balance;}
+  .layout{display:grid;grid-template-columns:228px 1fr;min-height:100vh;}
+  @media(max-width:920px){.layout{grid-template-columns:1fr;}}
+  .side{border-right:1px solid var(--border);background:var(--surface);padding:22px 16px;}
+  .logo{font-weight:700;font-size:16px;display:flex;align-items:center;gap:10px;padding:2px 8px 20px;}
+  .logo .mark{width:26px;height:26px;border-radius:8px;background:var(--accent);color:var(--on-solid);display:grid;place-items:center;font-family:var(--font-mono);font-size:13px;}
+  .nav{display:flex;flex-direction:column;gap:2px;}
+  .nav a{display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:var(--radius);font-size:14px;color:var(--muted);}
+  .nav a.on{background:var(--accent-soft);color:var(--accent);font-weight:600;}
+  .nav a:hover{background:var(--fg-soft);color:var(--fg);}
+  .nav .ic{width:16px;height:16px;}
+  .nav .ck{font-family:var(--font-mono);font-size:11px;}
+  .main{padding:28px 32px;}
+  .hello{display:flex;align-items:center;gap:16px;}
+  .avatar{width:52px;height:52px;border-radius:16px;background:var(--accent-soft);display:grid;place-items:center;font-family:var(--font-mono);font-size:18px;color:var(--accent);font-weight:700;}
+  .eyebrow{font-family:var(--font-mono);font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin:0;}
+  h1{font-size:clamp(26px,3vw,32px);letter-spacing:-0.02em;margin:4px 0 0;}
+  .handle{color:var(--muted);font-size:13px;margin-top:2px;}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:24px;}
+  @media(max-width:920px){.stats{grid-template-columns:repeat(2,1fr);}}
+  .stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px;}
+  .stat .lbl{color:var(--muted);font-size:13px;}
+  .stat .val{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:28px;font-weight:700;letter-spacing:-0.02em;margin-top:6px;}
+  .stat .sub{font-size:12.5px;color:var(--green,var(--good));margin-top:4px;}
+  .stat .sub.acc{color:var(--accent);}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:24px;}
+  @media(max-width:920px){.two{grid-template-columns:1fr;}}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;}
+  .card .hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+  .card .hd h2{font-size:16px;letter-spacing:-0.01em;margin:0;}
+  .card .hd a{font-size:13px;color:var(--accent);font-weight:600;}
+  .rest{display:flex;gap:14px;align-items:center;padding:12px 0;border-top:1px solid var(--border);}
+  .rest:first-of-type{border-top:0;}
+  .av{width:44px;height:44px;border-radius:12px;background:var(--accent-soft);display:grid;place-items:center;font-family:var(--font-mono);font-size:12px;color:var(--accent);font-weight:700;}
+  .rest .nm{font-weight:600;font-size:14.5px;}
+  .rest .de{color:var(--muted);font-size:12.5px;margin-top:2px;}
+  .budget{font-family:var(--font-mono);font-size:12px;color:var(--fg);margin-left:auto;text-align:right;font-weight:700;white-space:nowrap;}
+  .up{display:flex;gap:14px;align-items:center;padding:12px 0;border-top:1px solid var(--border);}
+  .up:first-of-type{border-top:0;}
+  .up .d{width:52px;text-align:center;font-family:var(--font-mono);line-height:1.1;}
+  .up .d .dd{font-size:20px;font-weight:700;}
+  .up .d .dm{font-size:11px;color:var(--muted);text-transform:uppercase;}
+  .up .nm{font-weight:600;font-size:14px;}
+  .up .st{color:var(--muted);font-size:12.5px;margin-top:2px;}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:11px 18px;border-radius:var(--radius);border:1px solid transparent;font-size:14.5px;font-weight:600;text-decoration:none;transition:background .15s;}
+  .btn:active{transform:translateY(1px);}
+  .btn-primary{background:var(--accent);color:var(--on-solid);border-color:var(--accent);}
+  .btn-primary:hover{background:color-mix(in oklch,var(--accent) 86%,black);}
+  .btn-outline{background:transparent;color:var(--fg);border-color:var(--border);}
+  .btn-outline:hover{border-color:var(--fg);}
+  .pill{display:inline-flex;align-items:center;padding:4px 10px;border-radius:999px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.03em;background:var(--accent-soft);color:var(--accent);}
+  .rule{border:0;border-top:1px solid var(--border);margin:22px 0;}
+  .row-between{display:flex;align-items:center;justify-content:space-between;gap:20px;}
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="side" data-od-id="sidebar">
+    <div class="logo"><span class="mark">C</span>CollabTable</div>
+    <nav class="nav">
+      <a class="on" href="#"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>Home</a>
+      <a href="discover-restaurants.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Discover</a>
+      <a href="campaign-detail.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 12l2 2 4-4"/><path d="M12 3l7 3v6c0 4-3 7-7 9-4-2-7-5-7-9V6z"/></svg>Applications <span class="ck">6</span></a>
+      <a href="deal-room.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12a8 8 0 0 1-8 8H4l2-3a8 8 0 1 1 15-5z"/></svg>Messages</a>
+      <a href="deal-room.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M4 12h16M4 17h10"/></svg>Campaigns</a>
+      <a href="deal-room.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/></svg>Earnings</a>
+      <a href="#"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l2.5 5.5L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-.5z"/></svg>Reviews</a>
+      <a href="#"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.5-2.3 1a7 7 0 0 0-2-1.2L14 2h-4l-.5 2.6a7 7 0 0 0-2 1.2L5 4.8 3 8.3l2 1.5A7 7 0 0 0 5 12l.1 1.2-2 1.5 2 3.5 2.3-1a7 7 0 0 0 2 1.2L10 22h4l.5-2.6a7 7 0 0 0 2-1.2l2.3 1 2-3.5-2-1.5c.1-.4.2-.8.2-1.2z"/></svg>Profile</a>
+    </nav>
+  </aside>
+
+  <main class="main" data-od-id="main">
+    <div class="hello">
+      <div class="avatar">A</div>
+      <div>
+        <p class="eyebrow">Welcome back</p>
+        <h1>Good afternoon, Ananya</h1>
+        <div class="handle">@ananya.eats · Food &amp; Lifestyle · Mumbai</div>
+      </div>
+    </div>
+
+    <div class="stats" data-od-id="influencer-stats">
+      <div class="stat"><div class="lbl">Available campaigns</div><div class="val">24</div><div class="sub">14 match your niche</div></div>
+      <div class="stat"><div class="lbl">Applications</div><div class="val">6</div><div class="sub">2 under review</div></div>
+      <div class="stat"><div class="lbl">Active collaborations</div><div class="val">3</div><div class="sub">1 deliverable due</div></div>
+      <div class="stat"><div class="lbl">Pending payments</div><div class="val">₹18,500</div><div class="sub acc">1 awaiting approval</div></div>
+    </div>
+
+    <div class="two">
+      <div class="card" data-od-id="recommended-restaurants">
+        <div class="hd"><h2>Recommended restaurants</h2><a href="discover-restaurants.html">View all</a></div>
+        <div class="rest">
+          <div class="av">SH</div>
+          <div><div class="nm">Japanese Fine Dining</div><div class="de">Japanese · Fine dining · ₹20K–₹50K</div></div>
+          <span class="budget">92% match</span>
+        </div>
+        <div class="rest">
+          <div class="av">BB</div>
+          <div><div class="nm">Premium Cocktail Bar</div><div class="de">Italian · Bar · ₹15K–₹30K</div></div>
+          <span class="budget">86% match</span>
+        </div>
+        <div class="rest">
+          <div class="av">CB</div>
+          <div><div class="nm">All-day Café</div><div class="de">Café · ₹10K–₹20K</div></div>
+          <span class="budget">81% match</span>
+        </div>
+        <a class="btn btn-outline" style="width:100%;justify-content:center;margin-top:14px;" href="discover-restaurants.html">Browse all campaigns</a>
+      </div>
+
+      <div class="card" data-od-id="upcoming">
+        <div class="hd"><h2>Upcoming</h2></div>
+        <div class="up">
+          <div class="d"><div class="dd">07</div><div class="dm">PM</div></div>
+          <div style="flex:1;"><div class="nm">Weekend Japanese Experience — Visit</div><div class="st">On-site shoot · address shared after shortlist · tomorrow</div></div>
+          <span class="pill">On-site</span>
+        </div>
+        <div class="up">
+          <div class="d"><div class="dd">11</div><div class="dm">AM</div></div>
+          <div style="flex:1;"><div class="nm">New Tasting Menu — Reel shoot</div><div class="st">On-site shoot · address shared after shortlist · Sat</div></div>
+          <span class="pill">Shoot</span>
+        </div>
+        <div class="up">
+          <div class="d"><div class="dd">—</div><div class="dm">Due</div></div>
+          <div style="flex:1;"><div class="nm">Submit 2 stories for delivery</div><div class="st">CollabTable · due in 3 days</div></div>
+          <span class="pill">Due</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="rule" data-od-id="trust-line"></div>
+    <p class="meta" style="color:var(--muted);font-size:12.5px;">Your contact details stay private. Restaurant names &amp; exact addresses are revealed only after you're shortlisted — and contact stays in-platform throughout.</p>
+  </main>
+</div>
+<script>
+  (function(){
+    function toast(msg){var t=document.getElementById('ctToast');if(!t){t=document.createElement('div');t.id='ctToast';t.style.cssText='position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:1200;background:var(--fg);color:var(--bg);padding:11px 18px;border-radius:999px;font-size:13px;font-family:var(--font-mono);box-shadow:0 6px 24px rgba(0,0,0,.18);opacity:0;transition:opacity .25s;';document.body.appendChild(t);}t.textContent=msg;t.style.opacity='1';clearTimeout(t._t);t._t=setTimeout(function(){t.style.opacity='0';},2400);}
+    var nav=document.querySelector('.nav');
+    nav.addEventListener('click',function(e){
+      var a=e.target.closest('a');
+      if(!a)return;
+      if(a.getAttribute('href')==='#'){
+        e.preventDefault();
+        nav.querySelectorAll('a').forEach(function(x){x.classList.remove('on');});
+        a.classList.add('on');
+        toast('Viewing: '+a.textContent.trim().replace(/\d+/g,'').trim());
+      }
+    });
+    document.querySelectorAll('.rest').forEach(function(r){
+      r.addEventListener('click',function(){window.location.href='campaign-detail.html';});
+      r.style.cursor='pointer';
+    });
+    var sels=document.querySelectorAll('.stat .val');
+    sels.forEach(function(s){
+      var txt=s.textContent,target=parseInt(txt.replace(/[^\d]/g,''),10)||0,prefix=txt.replace(/[\d.,]/g,'').trim();
+      if(!target)return;
+      s.textContent=prefix+'0';
+      var start=0,dur=900,t0=null;
+      function step(t){if(!t0)t0=t;var p=Math.min((t-t0)/dur,1);var v=Math.round(target*(p<.5?2*p*p:1-Math.pow(-2*p+2,2)/2));s.textContent=prefix+v.toLocaleString('en-IN');if(p<1)requestAnimationFrame(step);}
+      requestAnimationFrame(step);
+    });
+  })();
+</script>
+<style>
+  :root[data-theme="dark"]{
+    --bg:      oklch(18% 0.025 295);
+    --surface: oklch(24% 0.03 295);
+    --fg:      oklch(93% 0.02 60);
+    --muted:   oklch(66% 0.03 280);
+    --border:  oklch(34% 0.035 295);
+    --accent:  oklch(68% 0.16 304);
+    --good:    oklch(64% 0.14 152);
+    --warn:    oklch(72% 0.16 70);
+    --danger:  oklch(66% 0.18 28);
+    --accent-soft: color-mix(in oklch, var(--accent) 18%, transparent);
+    --fg-soft:     color-mix(in oklch, var(--fg) 7%, transparent);
+  }
+  .theme-toggle{
+    position:fixed;top:14px;right:14px;z-index:1000;
+    display:inline-flex;align-items:center;gap:8px;
+    padding:8px 13px;border:1px solid var(--border);border-radius:999px;
+    background:var(--surface);color:var(--fg);
+    font-family:var(--font-mono);font-size:12px;font-weight:600;
+    letter-spacing:.04em;text-transform:uppercase;cursor:pointer;
+    box-shadow:0 2px 14px color-mix(in oklch, var(--fg) 12%, transparent);
+  }
+  .theme-toggle:hover{background:var(--accent-soft);}
+</style>
+<button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle colour theme">
+  <span id="themeLabel">Dark</span>
+</button>
+<script>
+  (function(){
+    var root=document.documentElement;
+    function applyTheme(t){
+      root.setAttribute('data-theme',t);
+      try{localStorage.setItem('ct-theme',t);}catch(e){}
+      var lab=document.getElementById('themeLabel');
+      if(lab){lab.textContent=(t==='dark')?'Light':'Dark';}
+    }
+    try{
+      var saved=localStorage.getItem('ct-theme');
+      if(saved){applyTheme(saved);}
+      else if(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches){applyTheme('dark');}
+      else{applyTheme('light');}
+    }catch(e){applyTheme('light');}
+    var btn=document.getElementById('themeToggle');
+    if(btn){btn.addEventListener('click',function(){
+      applyTheme(root.getAttribute('data-theme')==='dark'?'light':'dark');
+    });}
+  })();
+</script>
+</body>
+
+</html>

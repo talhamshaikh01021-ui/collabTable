@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Weekend Japanese Experience — CollabTable</title>
+<meta name="description" content="Campaign detail for Weekend Japanese Experience by Sakura House: brief, budget range, applications, and shortlist.">
+<meta name="theme-color" content="#FE002A">
+<style>
+/* OD-LAYOUT-PRIMITIVES v1 — structure only: display, flex/grid, overflow, wrapping, ratio.
+   Put this @layer first; product CSS outside the layer always wins. */
+@layer od-layout {
+  :where(.od-stack,.od-row,.od-row-top,.od-cluster,.od-grid,.od-field,.od-stat,.od-cell,.od-tile) > :where(*) { min-width: 0; }
+
+  /* containers */
+  .od-stack   { display: flex; flex-direction: column; gap: var(--od-gap, 8px); }
+  .od-row     { display: flex; align-items: center; gap: var(--od-gap, 8px); }
+  .od-row-top { display: flex; align-items: flex-start; gap: var(--od-gap, 8px); }
+  .od-cluster { display: flex; flex-wrap: wrap; align-items: center; gap: var(--od-gap, 8px); }
+  .od-fill    { flex: 1 1 0; min-width: 0; }
+  .od-fixed   { flex: none; }
+  .od-grid    { display: grid; gap: var(--od-gap, 12px); grid-template-columns: repeat(var(--od-cols, 3), minmax(0, 1fr)); }
+
+  /* stacked information: each piece is its own line — never sibling inline spans */
+  .od-stat, .od-field, .od-cell { display: grid; gap: var(--od-gap, 2px); }
+  :where(.od-stat,.od-field,.od-cell) > :where(*) { display: block; }
+  .od-tile { display: grid; grid-template-rows: auto 1fr; }
+  :where(.od-tile) > :where(*) { display: block; }
+
+  /* media keeps its intrinsic ratio by default; never a distorted or cropped
+     cover by accident. height:auto lets the ratio win over an <img height="…">
+     attribute. Cropping to a uniform box is an explicit opt-in: set --od-ratio
+     AND add .od-media-cover together (per the core rule, only where a crop is
+     deliberate — tile thumbs, decorative fills — never on full-frame content). */
+  .od-media { display: block; width: 100%; height: auto; aspect-ratio: var(--od-ratio, auto); }
+  .od-media-cover { object-fit: cover; }
+
+  /* data text only — authored copy is rewritten to its budget instead */
+  .od-truncate { display: block; max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .od-clamp-2, .od-clamp-3 { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+  .od-clamp-2 { -webkit-line-clamp: 2; }
+  .od-clamp-3 { -webkit-line-clamp: 3; }
+  .od-lines-2 { min-height: calc(2 * 1.4em); }   /* block-level reservation for a shared baseline */
+  .od-nowrap  { white-space: nowrap; }           /* 数字+单位 · 价格+起 · 日期+星期 */
+  .od-keep    { word-break: keep-all; overflow-wrap: anywhere; } /* CJK labels break at spaces / <wbr> first */
+
+  /* screen skeleton (optional): bars take their own space, the middle scrolls — no padding guessed for chrome */
+  .od-screen { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; height: 100%; }
+  .od-scroll { overflow-y: auto; overscroll-behavior: contain; min-height: 0; }
+
+  /* horizontal rail: the next item peeks at the edge; trailing room survives overflow */
+  .od-rail { display: flex; gap: var(--od-gap, 8px); overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none;
+             padding-inline: var(--od-rail-pad, 16px); scroll-padding-inline: var(--od-rail-pad, 16px); }
+  .od-rail::-webkit-scrollbar { display: none; }
+  :where(.od-rail) > :where(*) { flex: none; scroll-snap-align: start; }
+  :where(.od-rail) > :where(:last-child) { margin-inline-end: var(--od-rail-pad, 16px); }
+
+  .od-spacer { flex: none; visibility: hidden; pointer-events: none; }
+  .od-touch  { min-width: 44px; min-height: 44px; }
+}
+/* /OD-LAYOUT-PRIMITIVES v1 */
+</style>
+<link rel="stylesheet" href="assets/theme.css">
+<style>
+  :root {
+    --color-bg: #000;
+    --color-surface: #111;
+    --color-surface-2: #1a1a1a;
+    --color-surface-3: #222;
+    --color-fg: #fff;
+    --color-fg-muted: #a3a3a3;
+    --color-primary: #FE002A;
+    --color-primary-press: #E0001F;
+    --color-primary-12: rgba(254,0,42,0.12);
+    --color-primary-15: rgba(254,0,42,0.15);
+    --color-gold: #D4AF37;
+    --color-gold-light: #E8C877;
+    --color-gold-lighter: #F3D98B;
+    --color-gold-lighter2: #F7E3A4;
+    --color-border: rgba(255,255,255,0.05);
+    --color-border-strong: rgba(255,255,255,0.1);
+    --color-border-subtle: rgba(255,255,255,0.2);
+    --color-success: #22c55e;
+    --color-warning: #f59e0b;
+    --color-error: #ef4444;
+    --font-sans: 'Ubuntu', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-mono: 'SF Mono', 'Fira Code', monospace;
+    --s1: 4px;
+    --s2: 8px;
+    --s3: 12px;
+    --s4: 16px;
+    --s5: 24px;
+    --s6: 32px;
+    --s7: 48px;
+    --s8: 64px;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+    --radius-pill: 9999px;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+    --shadow-lg: 0 12px 32px rgba(0,0,0,0.5);
+    --shadow-xl: 0 20px 50px -15px rgba(254,0,42,0.65);
+    --shadow-gold: 0 8px 24px rgba(212,175,55,0.25);
+    --shadow-deep: 0 24px 48px rgba(0,0,0,0.7);
+    --transition-fast: 150ms ease;
+    --transition-normal: 250ms ease;
+    --transition-slow: 400ms ease;
+    --z-dropdown: 100;
+    --z-modal: 200;
+    --z-toast: 300;
+  }
+
+  .cd { display: grid; gap: var(--s5); padding-top: var(--s5); padding-bottom: var(--s6); max-width: 900px; margin: 0 auto; text-align: left; }
+  .hero { display: grid; gap: var(--s5); text-align: left; }
+  .cd-title { display: block; font-size: clamp(1.75rem, 4vw, var(--f-4xl)); font-weight: 500; color: var(--fg); line-height: 1.08; letter-spacing: -0.02em; text-align: left; }
+  .cd-s { display: block; margin-top: var(--s3); font-size: var(--f-sm); color: var(--muted-fg); text-align: left; }
+  .meta { display: flex; flex-wrap: wrap; gap: var(--s4) var(--s5); justify-content: flex-start; }
+  .mt { display: grid; gap: var(--s1); text-align: left; }
+  .mk { display: block; font-size: var(--f-xs); color: var(--muted-fg); }
+  .mv { display: block; font-size: var(--f-sm); color: var(--fg); }
+  .brief { display: grid; gap: var(--s4); text-align: left; }
+  .brief-t { display: block; font-size: var(--f-2xl); font-weight: 500; color: var(--fg); text-align: left; }
+  .brief-p { display: block; max-width: var(--measure); font-size: var(--f-sm); color: var(--fg-2); text-align: left; }
+  .rail-row { display: flex; gap: var(--s2); overflow-x: auto; scrollbar-width: none; padding-bottom: var(--s2); }
+  .rail-row::-webkit-scrollbar { display: none; }
+  .shot { flex: none; width: 190px; }
+  .shot-t { display: block; margin-top: var(--s2); font-size: var(--f-xs); color: var(--muted-fg); text-align: left; }
+  .appl { display: grid; gap: var(--s3); padding: var(--s4) 0; border-bottom: 1px solid var(--line-05); }
+  .appl:last-child { border-bottom: 0; }
+  .appl-top { display: flex; align-items: center; gap: var(--s3); }
+  .appl-t { display: block; color: var(--fg); font-weight: 500; text-align: left; }
+  .appl-s { display: block; margin-top: 2px; font-size: var(--f-xs); color: var(--muted-fg); text-align: left; }
+  .appl-rate { margin-left: auto; text-align: right; }
+  .appl-rv { display: block; color: var(--fg); font-weight: 500; }
+  .appl-acts { display: flex; flex-wrap: wrap; gap: var(--s2); }
+  .flow { display: grid; gap: var(--s3); text-align: left; }
+  .flow-row { display: flex; align-items: flex-start; gap: var(--s3); }
+  .flow-n { flex: none; width: 24px; height: 24px; display: grid; place-items: center; border-radius: 9999px; border: 1px solid var(--line-20); font-size: 11px; color: var(--fg-3); }
+  .flow-t { display: block; font-size: var(--f-sm); color: var(--fg); text-align: left; }
+  .flow-s { display: block; font-size: var(--f-xs); color: var(--muted-fg); text-align: left; }
+  .terms { display: grid; gap: var(--s3); text-align: left; }
+  .term { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s4); padding: var(--s3); background: var(--surface-2); border-radius: var(--r-md); text-align: left; }
+  .term-k { display: block; font-size: var(--f-sm); color: var(--muted-fg); text-align: left; }
+  .term-v { display: block; font-size: var(--f-sm); color: var(--fg); font-weight: 500; text-align: left; }
+  .stat-grid { display: grid; gap: var(--s3); grid-template-columns: repeat(2, 1fr); }
+  .stat-card { padding: var(--s4); background: var(--surface-2); border-radius: var(--r-md); text-align: left; }
+  .stat-card .stat-n { font-size: var(--f-xl); font-weight: 500; color: var(--fg); text-align: left; }
+  .stat-card .stat-c { font-size: var(--f-xs); color: var(--muted-fg); text-align: left; }
+  .portfolio-grid { display: grid; gap: var(--s3); grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+  .portfolio-item { aspect-ratio: 1; border-radius: var(--r-md); overflow: hidden; background: var(--surface-2); }
+  .avail-grid { display: grid; gap: var(--s2); grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+  .avail-chip { padding: var(--s2) var(--s3); background: var(--surface-2); border: 1px solid var(--line-10); border-radius: var(--r-md); font-size: var(--f-sm); color: var(--fg); }
+  .avail-chip.active { background: var(--primary); border-color: var(--primary); color: var(--fg); }
+  .deliverables { display: grid; gap: var(--s3); }
+  .deliverable { display: flex; align-items: center; gap: var(--s2); padding: var(--s3); background: var(--surface-2); border-radius: var(--r-md); }
+  .deliverable-status { flex: none; width: 20px; height: 20px; border: 2px solid var(--line-15); border-radius: var(--r-sm); display: grid; place-items: center; }
+  .deliverable-status.done { background: var(--primary); border-color: var(--primary); color: var(--fg); }
+  .deliverable-status.done::after { content: ""; width: 5px; height: 10px; border: 2px solid currentColor; border-top: 0; border-left: 0; transform: rotate(45deg); }
+  .timeline { display: grid; gap: var(--s3); }
+  .timeline-row { display: flex; align-items: flex-start; gap: var(--s3); }
+  .timeline-n { flex: none; width: 24px; height: 24px; display: grid; place-items: center; border-radius: 9999px; border: 1px solid var(--line-20); font-size: 11px; color: var(--fg-3); }
+  .timeline-t { display: block; font-size: var(--f-sm); color: var(--fg); text-align: left; }
+  .timeline-s { display: block; font-size: var(--f-xs); color: var(--muted-fg); text-align: left; }
+  .deal-status { display: flex; align-items: center; gap: var(--s3); padding: var(--s4); background: var(--surface-2); border-radius: var(--r-lg); }
+  .deal-status-icon { flex: none; width: 40px; height: 40px; border-radius: 9999px; background: var(--primary-12); display: grid; place-items: center; color: var(--primary); }
+  .deal-status-text { color: var(--fg); text-align: left; }
+  .deal-status-text strong { color: var(--primary); }
+  .verification-grid { display: grid; gap: var(--s3); grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+  .verify-item { display: flex; align-items: center; gap: var(--s2); padding: var(--s3); background: var(--surface-2); border-radius: var(--r-md); }
+  .verify-icon { flex: none; width: 24px; height: 24px; border-radius: 9999px; background: var(--primary-12); display: grid; place-items: center; color: var(--primary); }
+  .verify-item.pending .verify-icon { background: var(--gold-12); color: var(--gold); }
+  .verify-item.done .verify-icon { background: var(--primary-12); color: var(--primary); }
+  .verify-text { font-size: var(--f-sm); color: var(--fg); text-align: left; }
+  .contact-grid { display: grid; gap: var(--s3); grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+  .contact-item { padding: var(--s3); background: var(--surface-2); border-radius: var(--r-md); text-align: left; }
+  .contact-item .contact-k { display: block; font-size: var(--f-xs); color: var(--muted-fg); text-align: left; }
+  .contact-item .contact-v { display: block; font-size: var(--f-sm); color: var(--fg); font-weight: 500; text-align: left; }
+  .contact-item.masked .contact-v { color: var(--muted-fg); }
+
+  .cd { grid-template-columns: 1fr; }
+  .hero { grid-template-columns: 1fr; }
+  .cd-view { width: 100%; }
+  .panel { width: 100%; }
+  .terms { width: 100%; }
+  .term { width: 100%; }
+  .stat-grid { width: 100%; }
+  .stat-card { width: 100%; }
+
+  /* Header styles */
+  .header {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(0,0,0,0.9); backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--color-border);
+    padding: var(--s3) var(--s4);
+  }
+  .header-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: var(--s4); }
+  .logo { font-weight: 700; font-size: 1.25rem; color: var(--color-fg); letter-spacing: -0.02em; }
+  .logo span { color: var(--color-primary); }
+  .nav { display: flex; align-items: center; gap: var(--s3); }
+  .nav-link { color: var(--color-fg-muted); font-size: 0.875rem; padding: var(--s1) var(--s2); border-radius: var(--radius-sm); transition: color var(--transition-fast), background var(--transition-fast); }
+  .nav-link:hover, .nav-link[aria-current="page"] { color: var(--color-fg); background: var(--color-surface-2); }
+  .nav-actions { display: flex; align-items: center; gap: var(--s2); }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--s1); padding: var(--s2) var(--s3); font-size: 0.875rem; font-weight: 600; border-radius: var(--radius-pill); white-space: nowrap; transition: all var(--transition-fast); }
+  .btn-primary { background: var(--color-primary); color: #fff; }
+  .btn-primary:hover { background: var(--color-primary-press); }
+  .btn-ghost { color: var(--color-fg); background: transparent; border: 1px solid var(--color-border-strong); }
+  .btn-ghost:hover { background: var(--color-surface-2); border-color: var(--color-border-subtle); }
+  .btn-quiet { color: var(--color-fg-muted); }
+  .btn-quiet:hover { color: var(--color-fg); }
+  .btn-sm { padding: var(--s1) var(--s2); font-size: 0.8125rem; }
+
+  .burger { display: none; flex-direction: column; gap: 5px; width: 24px; height: 18px; padding: 0; background: none; border: none; cursor: pointer; }
+  .burger span { display: block; height: 2px; background: var(--color-fg); border-radius: 2px; transition: transform var(--transition-normal), opacity var(--transition-normal); }
+  .burger[aria-expanded="true"] span:nth-child(1) { transform: translateY(8px) rotate(45deg); }
+  .burger[aria-expanded="true"] span:nth-child(2) { opacity: 0; }
+  .burger[aria-expanded="true"] span:nth-child(3) { transform: translateY(-8px) rotate(-45deg); }
+
+  .mnav { display: none; position: fixed; inset: 0 0 0 auto; background: var(--color-surface); border-left: 1px solid var(--color-border); padding: var(--s5) var(--s4); flex-direction: column; gap: var(--s2); z-index: 100; max-width: 280px; width: 100%; }
+  .mnav[aria-hidden="false"] { display: flex; }
+  .mnav-link { padding: var(--s2) var(--s3); font-size: 1rem; font-weight: 500; color: var(--color-fg); border-radius: var(--radius-md); }
+  .mnav-link:hover, .mnav-link[aria-current="page"] { background: var(--color-surface-2); color: var(--color-primary); }
+
+/* Layout */
+.page { min-height: 100vh; display: flex; flex-direction: column; }
+.wrap { max-width: 1200px; margin: 0 auto; padding: var(--s4) var(--s4); width: 100%; }
+
+/* Section */
+.section { margin-bottom: var(--s6); }
+.section-title { font-size: 1.25rem; font-weight: 700; margin-bottom: var(--s4); color: var(--color-fg); }
+.section-subtitle { color: var(--color-fg-muted); margin-top: -var(--s2); margin-bottom: var(--s4); font-size: 0.875rem; }
+
+  /* Stats */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--s4); }
+  .stat { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: var(--s5); text-align: left; }
+  .stat-value { font-size: 2rem; font-weight: 700; color: var(--color-fg); line-height: 1.2; }
+  .stat-label { font-size: 0.875rem; color: var(--color-fg-muted); margin-top: var(--s1); }
+
+  /* Portfolio */
+  .portfolio-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--s4); }
+  .portfolio-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); overflow: hidden; transition: transform var(--transition-normal), box-shadow var(--transition-normal); }
+  .portfolio-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+  .portfolio-media { aspect-ratio: 16/10; background: var(--color-surface-2); overflow: hidden; }
+  .portfolio-media img { width: 100%; height: 100%; object-fit: cover; transition: transform var(--transition-slow); }
+  .portfolio-card:hover .portfolio-media img { transform: scale(1.05); }
+  .portfolio-body { padding: var(--s4); }
+  .portfolio-title { font-weight: 600; font-size: 0.875rem; color: var(--color-fg); margin-bottom: var(--s1); }
+  .portfolio-meta { font-size: 0.75rem; color: var(--color-fg-muted); }
+
+  /* Services */
+  .services-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--s4); }
+  .service-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--s4); transition: box-shadow var(--transition-normal); }
+  .service-card:hover { box-shadow: var(--shadow-md); }
+  .service-icon { width: 40px; height: 40px; border-radius: var(--radius-md); background: var(--color-primary-15); display: flex; align-items: center; justify-content: center; margin-bottom: var(--s3); }
+  .service-icon svg { width: 20px; height: 20px; color: var(--color-primary); }
+  .service-title { font-weight: 600; font-size: 0.875rem; color: var(--color-fg); margin-bottom: var(--s1); }
+  .service-desc { font-size: 0.75rem; color: var(--color-fg-muted); line-height: 1.4; }
+  .service-price { font-size: 0.875rem; color: var(--color-primary); font-weight: 600; margin-top: var(--s2); }
+
+  /* Availability */
+  .availability-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--s4); }
+  .availability-item { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--s4); }
+  .availability-label { font-weight: 600; font-size: 0.875rem; color: var(--color-fg); margin-bottom: var(--s1); }
+  .availability-desc { font-size: 0.75rem; color: var(--color-fg-muted); line-height: 1.4; }
+
+  /* Pricing */
+  .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--s4); }
+  .pricing-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--s4); text-align: left; }
+  .pricing-tag { display: inline-block; padding: var(--s1) var(--s2); background: var(--color-primary-12); color: var(--color-primary); font-size: 0.75rem; font-weight: 600; border-radius: var(--radius-sm); margin-bottom: var(--s2); }
+  .pricing-name { font-weight: 600; font-size: 0.875rem; color: var(--color-fg); margin-bottom: var(--s1); }
+  .pricing-desc { font-size: 0.75rem; color: var(--color-fg-muted); line-height: 1.4; margin-bottom: var(--s2); }
+  .pricing-features { font-size: 0.75rem; color: var(--color-fg-muted); line-height: 1.5; }
+  .pricing-features li { margin-bottom: var(--s1); list-style: none; }
+  .pricing-features li::before { content: "✓"; color: var(--color-success); margin-right: var(--s1); }
+
+  /* Reviews */
+  .reviews-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--s4); }
+  .review-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--s4); transition: box-shadow var(--transition-normal); }
+  .review-card:hover { box-shadow: var(--shadow-md); }
+  .review-avatar { width: 48px; height: 48px; border-radius: var(--radius-pill); background: var(--color-primary-15); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.75rem; color: var(--color-primary); }
+  .review-body { flex: 1; }
+  .review-header { display: flex; align-items: center; gap: var(--s3); margin-bottom: var(--s2); }
+  .review-name { font-weight: 600; font-size: 0.875rem; color: var(--color-fg); }
+  .review-date { font-size: 0.75rem; color: var(--color-fg-muted); }
+  .review-text { font-size: 0.875rem; line-height: 1.5; color: var(--color-fg); margin-bottom: var(--s2); }
+  .rating { color: var(--color-warning); font-size: 0.875rem; margin-left: var(--s2); }
+
+/* Deal CTA */
+.deal-cta {
+  background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: var(--s5) var(--s4); margin-top: var(--s6); }
+.deal-cta .btn-primary { justify-content: center; }
+.deal-cta .btn-primary:hover { background: var(--color-primary-press); }
+
+  /* Verification */
+  .verification-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--s4); }
+  .verification-item { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--s4); }
+  .verification-icon { width: 20px; height: 20px; border-radius: 50%; background: var(--color-success); flex-shrink: 0; display: flex; align-items: center; justify-content: center; margin-right: var(--s3); }
+  .verification-label { font-weight: 600; font-size: 0.875rem; color: var(--color-fg); }
+  .verification-desc { font-size: 0.75rem; color: var(--color-fg-muted); line-height: 1.4; }
+
+/* Footer */
+.footer {
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  padding: var(--s5) var(--s4);
+  margin-top: var(--s6);
+}
+  .footer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--s4); }
+  .footer-grid > div { color: var(--color-fg-muted); font-size: 0.75rem; }
+
+  /* Mobile menu */
+  @media (max-width: 768px) {
+    .mnav { display: flex; }
+    .burger { display: flex; }
+    .nav { display: none; }
+    .hero { padding: var(--s5) 0 var(--s4); }
+    .hero-content, .stats-grid, .portfolio-grid, .services-grid, .availability-grid, .pricing-grid, .reviews-grid, .verification-grid { grid-template-columns: 1fr; }
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .cc-carousel__card {
+      transition: none !important;
+    }
+    .cc-carousel__photo--leaving {
+      animation: none !important;
+    }
+    * {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="bloom" aria-hidden="true"></div>
+
+<header class="header">
+  <div class="header-inner">
+    <a class="logo" href="index.html" aria-label="CollabTable home">
+      <span class="brand-a">COLLAB</span><span class="brand-b">TABLE</span>
+    </a>
+    <nav class="nav-actions">
+      <button class="btn btn-ghost btn-sm" aria-label="Back">Back</button>
+    </nav>
+  </div>
+</header>
+
+<main class="main">
+      <!-- Hero / Campaign Header -->
+      <section class="section" id="campaign-header">
+        <div class="hero">
+          <div class="hero-content">
+            <div class="eyebrow">Restaurant View</div>
+            <h1 class="h1">Weekend Japanese Experience</h1>
+            <p class="hero-meta">
+              <span class="item"><span class="dot"></span>Sakura House</span>
+              <span class="item"><span class="dot"></span>Japanese</span>
+              <span class="item"><span class="dot"></span>Mumbai</span>
+            </p>
+          </div>
+        </div>
+      </section>
+
+        <!-- Creator Campaign Details -->
+        <div class="cd-view" id="view-creator" role="tabpanel" aria-labelledby="view-creator-tab">
+        <!-- 1. Campaign Header -->
+        <header class="panel" style="border-bottom:1px solid var(--line-10);padding-bottom:var(--s5)">
+          <div class="row-wrap">
+            <span class="tag tag-success">Offer accepted</span>
+            <span class="tag">Weekend Japanese Experience</span>
+            <span class="tag">Sakura House</span>
+            <span class="tag">Japanese</span>
+            <span class="tag">Mumbai</span>
+          </div>
+          <h1 class="cd-title mt-4">Weekend Japanese Experience</h1>
+          <p class="cd-s mt-4">Launch campaign for the new tasting menu. Two reels and a story set, shot across two weekend services at Sakura House in Mumbai.</p>
+        </header>
+
+        <!-- 2. Campaign Brief -->
+        <section class="panel brief" aria-labelledby="brief-t">
+          <h2 class="brief-t" id="brief-t">The brief</h2>
+          <p class="brief-p">We are launching a tasting menu for the weekend and want content that sells the experience rather than just the plates. Two reels and a story set, shot on site across two services so the room has energy in the background.</p>
+          <p class="brief-p">Must-shoot: the chef's counter pass, the shared table as it is served, and the dessert finish. Please avoid heavy filters — we want it to look like the room does on a Friday night.</p>
+          <div>
+            <span class="flabel eyebrow">Deliverables</span>
+            <div class="row-wrap mt-6">
+              <span class="chip" aria-pressed="true" style="cursor:default">Reels × 2</span>
+              <span class="chip" aria-pressed="true" style="cursor:default">Story set (5 frames)</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- 4. My Application -->
+        <section class="panel" aria-labelledby="my-appl-t">
+          <div class="between" style="flex-wrap:wrap">
+            <div>
+              <span class="eyebrow">My Application</span>
+              <h2 class="h3" id="my-appl-t">Weekend Japanese Experience</h2>
+            </div>
+            <div class="row-wrap">
+              <span class="tag tag-success">Offer accepted</span>
+              <span class="tag">₹20,000</span>
+            </div>
+          </div>
+          <div class="appl" style="padding-top:0">
+            <div class="appl-top">
+              <span class="avatar">A</span>
+              <span style="min-width:0">
+                <span class="appl-t">Your proposal</span>
+                <span class="appl-s">Japanese · Mumbai · Reels and story set</span>
+              </span>
+              <span class="appl-rate">
+                <span class="appl-rv od-nowrap">₹20,000</span>
+                <span class="appl-s">Offer accepted</span>
+              </span>
+            </div>
+            <p class="appl-s" style="margin:0">Applied with a fixed scope: two reels and a story set, shot across the 12th and 13th. Available on both services.</p>
+          </section>
+
+        <!-- 5. Apply / Deal Room -->
+        <section class="panel" aria-labelledby="deal-room-t">
+          <h2 class="h3" id="deal-room-t">Deal Room</h2>
+          <p class="cd-s">Negotiate terms, sign contracts, and manage delivery all in one place.</p>
+          <div class="row-wrap mt-6">
+            <button class="btn btn-primary mt-6" type="button" data-sheet="deal-room" data-deal-link="weekend-japanese">Open Deal Room</button>
+          </div>
+          <p class="hint mt-4">Contact details unlock once both sides accept the contract.</p>
+        </section>
+
+        <!-- 6. Restaurant Profile -->
+        <section class="panel" aria-labelledby="restaurant-profile-t">
+          <h2 class="h3" id="restaurant-profile-t">Restaurant Profile</h2>
+          <div class="row-top" style="gap:var(--s3);margin-bottom:var(--s4)">
+            <span class="avatar">S</span>
+            <span style="min-width:0">
+              <span class="list-t">Sakura House</span>
+              <span class="list-s">Japanese · Mumbai · Verified</span>
+            </span>
+          </div>
+          <div class="stat-grid">
+            <div class="stat-card"><span class="stat-n">Monthly</span><span class="stat-c">Campaign cadence</span></div>
+            <div class="stat-card"><span class="stat-n">Verified</span><span class="stat-c">Can fund escrow</span></div>
+            <div class="stat-card"><span class="stat-n">3</span><span class="stat-c">Active campaigns</span></div>
+            <div class="stat-card"><span class="stat-n">4.8</span><span class="stat-c">Creator rating</span></div>
+          </div>
+          <p class="brief-p mt-4">Sakura House is a modern Japanese restaurant in Bandra West, Mumbai. Known for their seasonal tasting menus and chef's counter experience.</p>
+          <button class="btn btn-quiet mt-6" type="button" data-blocked-contact="The restaurant's contact details">View restaurant contact</button>
+        </section>
+
+        <!-- 7. Timeline -->
+        <section class="panel" aria-labelledby="timeline-t">
+          <h2 class="h3" id="timeline-t">Timeline</h2>
+          <div class="timeline">
+            <div class="timeline-row">
+              <span class="timeline-n">1</span>
+              <div style="min-width:0"><span class="timeline-t">Application submitted</span><span class="timeline-s">Aug 28</span></div>
+            </div>
+            <div class="timeline-row">
+              <span class="timeline-n">2</span>
+              <div style="min-width:0"><span class="timeline-t">Offer accepted</span><span class="timeline-s">Sep 2</span></div>
+            </div>
+            <div class="timeline-row">
+              <span class="timeline-n">3</span>
+              <div style="min-width:0"><span class="timeline-t">Shoot dates</span><span class="timeline-s">Sep 12–14</span></div>
+            </div>
+            <div class="timeline-row">
+              <span class="timeline-n">4</span>
+              <div style="min-width:0"><span class="timeline-t">Content delivery</span><span class="timeline-s">Sep 20</span></div>
+            </div>
+            <div class="timeline-row">
+              <span class="timeline-n">5</span>
+              <div style="min-width:0"><span class="timeline-t">Review & payout</span><span class="timeline-s">Sep 25</span></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 8. Contact & Legal -->
+        <section class="panel" aria-labelledby="contact-legal-t">
+          <h2 class="h3" id="contact-legal-t">Contact & Legal</h2>
+          <div class="lockbar" style="margin-bottom:var(--s5)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10.5" width="16" height="10" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg>
+            <span>Phone, email, and handles stay masked until the contract is accepted.</span>
+          </div>
+          <div class="contact-grid">
+            <div class="contact-item masked"><span class="contact-k">Phone</span><span class="contact-v">Hidden until payment</span></div>
+            <div class="contact-item masked"><span class="contact-k">Email</span><span class="contact-v">Hidden until payment</span></div>
+            <div class="contact-item masked"><span class="contact-k">Instagram</span><span class="contact-v">Hidden until payment</span></div>
+            <div class="contact-item masked"><span class="contact-k">Address</span><span class="contact-v">Hidden until payment</span></div>
+          </div>
+          <div class="terms mt-6" style="font-size:var(--f-xs);color:var(--muted-fg);line-height:1.6">
+            <p><strong>Cancellation policy:</strong> Free cancellation up to 7 days before shoot. Within 7 days: 50% fee. Same day: 100% fee.</p>
+            <p><strong>Usage rights:</strong> 6 months digital usage included. Extended rights available on request.</p>
+            <p><strong>Payment terms:</strong> Escrow funded on contract acceptance. 10% platform fee deducted. Net payout released within 5 business days of content approval.</p>
+          </div>
+</section>
+
+      <!-- Stats -->
+      <section class="section" id="stats">
+        <h2 class="section-title">Campaign Stats</h2>
+        <div class="stats-grid">
+          <div class="stat">
+            <div class="stat-value">₹20K–₹50K</div>
+            <div class="stat-label">Budget Range</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value">Sep 15</div>
+            <div class="stat-label">Application Deadline</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value">12–14 Sep</div>
+            <div class="stat-label">Shoot Dates</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value">3</div>
+            <div class="stat-label">Applications Received</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value">₹20,000</div>
+            <div class="stat-label">Escrow Amount</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value">₹18,000</div>
+            <div class="stat-label">Creator Payout</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Commercial Terms -->
+      <section class="section" id="commercial-terms">
+        <h2 class="section-title">Commercial Terms</h2>
+        <div class="terms">
+          <div class="term"><span class="term-k">Budget range</span><span class="term-v amount amount-gold od-nowrap">₹20K–₹50K</span></div>
+          <div class="term"><span class="term-k">Application deadline</span><span class="term-v od-nowrap">Sep 15</span></div>
+          <div class="term"><span class="term-k">Shoot dates</span><span class="term-v od-nowrap">12–14 Sep</span></div>
+          <div class="term"><span class="term-k">Cuisine</span><span class="term-v">Japanese</span></div>
+          <div class="term"><span class="term-k">City</span><span class="term-v">Mumbai</span></div>
+          <div class="term"><span class="term-k">Notice period</span><span class="term-v">3–5 days</span></div>
+          <div class="term"><span class="term-k">Usage rights</span><span class="term-v">6 months, digital only</span></div>
+          <div class="term"><span class="term-k">Exclusivity</span><span class="term-v">No competing Japanese brands for 90 days</span></div>
+          <div class="term"><span class="term-k">Escrow funded</span><span class="term-v amount amount-gold od-nowrap">₹20,000</span></div>
+          <div class="term"><span class="term-k">Platform fee (10%)</span><span class="term-v amount amount-gold od-nowrap">₹2,000</span></div>
+          <div class="term"><span class="term-k">Creator payout</span><span class="term-v amount amount-gold od-nowrap">₹18,000</span></div>
+        </div>
+      </section>
+
+      <!-- Campaign Brief -->
+      <section class="section" id="campaign-brief">
+        <h2 class="section-title">Campaign Brief</h2>
+        <p class="section-subtitle">What the restaurant is looking for</p>
+        <div class="brief">
+          <p class="brief-p">We are launching a tasting menu for the weekend and want content that sells the experience rather than just the plates. Two reels and a story set, shot on site across two services so the room has energy in the background.</p>
+          <p class="brief-p">Must-shoot: the chef's counter pass, the shared table as it is served, and the dessert finish. Please avoid heavy filters — we want it to look like the room does on a Friday night.</p>
+        </div>
+        <div class="brief">
+          <span class="flabel eyebrow">Deliverables</span>
+          <div class="row-wrap mt-6">
+            <span class="chip" aria-pressed="true" style="cursor:default">Reels × 2</span>
+            <span class="chip" aria-pressed="true" style="cursor:default">Story set (5 frames)</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Must-shoot Reference Images / Portfolio -->
+      <section class="section" id="portfolio">
+        <h2 class="section-title">Must-shoot References</h2>
+        <p class="section-subtitle">Visual references for the campaign</p>
+        <div class="portfolio-grid">
+          <article class="portfolio-item" style="background-image:url('assets/media/portfolio-1.jpg'); background-size:cover; background-position:center;"></article>
+          <article class="portfolio-item" style="background-image:url('assets/media/portfolio-2.jpg'); background-size:cover; background-position:center;"></article>
+          <article class="portfolio-item" style="background-image:url('assets/media/portfolio-3.jpg'); background-size:cover; background-position:center;"></article>
+          <article class="portfolio-item" style="background-image:url('assets/media/portfolio-4.jpg'); background-size:cover; background-position:center;"></article>
+        </div>
+        <p class="brief-p mt-4">Recent campaigns: The Bombay Canteen (2.1M views), Masala Library (1.8M views), Paowalla (940K views), O Pedro (1.2M views).</p>
+      </section>
+
+      <!-- 3D Ferris Wheel Carousel for Portfolio -->
+      <section class="section" id="portfolio-carousel">
+        <h2 class="section-title">Portfolio / Work Samples</h2>
+        <p class="section-subtitle">Drag, scroll, or click to navigate • Click card to focus</p>
+        <div class="cc-carousel" id="portfolio-carousel" data-axis="y" data-tilt="-5" data-perspective="2500" data-gap="24" data-card-width="320" data-aspect-ratio="0.5625" data-speed="14" data-autoplay="drift" data-interval="3" data-draggable="true" data-momentum="0.6" data-snap="true" data-pause-on-hover="true" data-parallax="0.3" data-stretch="0.5" data-depth-fade="0.55" data-inner-shade="0.6" data-corner-radius="12" data-fade-color="#000000">
+          <div class="cc-carousel__view">
+            <div class="cc-carousel__stage">
+              <div class="cc-carousel__camera">
+                <div class="cc-carousel__ring" id="cc-ring"></div>
+              </div>
+            </div>
+          </div>
+          <div class="cc-carousel__caption" id="cc-caption" aria-hidden="true">
+            <span class="cc-carousel__title" id="cc-title"></span>
+            <span class="cc-carousel__subtitle" id="cc-subtitle"></span>
+          </div>
+          <div class="cc-carousel__indicator" id="cc-indicator" aria-hidden="true"></div>
+          <div class="cc-carousel__live" aria-live="polite" aria-atomic="true" id="cc-live"></div>
+        </div>
+      </section>
+
+</div>
+      </section>
+
+      <!-- Deal Room CTA -->
+      <section class="section deal-cta" id="deal-room-cta">
+        <h2 class="section-title">Start Collaboration</h2>
+        <p class="section-subtitle">Ready to work with Ananya Sharma? Open the Deal Room to negotiate terms, review deliverables, and start the collaboration process.</p>
+        <button class="btn btn-primary">Open Deal Room</button>
+      </section>
+
+      <!-- Verification -->
+      <section class="section" id="verification">
+        <h2 class="section-title">Verification & Trust</h2>
+        <div class="verification-grid">
+          <div class="verification-item">
+            <div class="verification-icon"></div>
+            <div>
+              <div class="verification-label">Identity Verified</div>
+              <div class="verification-desc">Government ID verified on platform</div>
+            </div>
+          </div>
+          <div class="verification-item">
+            <div class="verification-icon"></div>
+            <div>
+              <div class="verification-label">Phone Verified</div>
+              <div class="verification-desc">Mobile number OTP verified</div>
+            </div>
+          </div>
+          <div class="verification-item">
+            <div class="verification-icon"></div>
+            <div>
+              <div class="verification-label">Email Verified</div>
+              <div class="verification-desc">Email address verified</div>
+            </div>
+          </div>
+          <div class="verification-item">
+            <div class="verification-icon"></div>
+            <div>
+              <div class="verification-label">Instagram Connected</div>
+              <div class="verification-desc">Instagram account linked</div>
+            </div>
+          </div>
+          <div class="verification-item">
+            <div class="verification-icon"></div>
+            <div>
+              <div class="verification-label">Portfolio Authentic</div>
+              <div class="verification-desc">Work samples verified original</div>
+            </div>
+          </div>
+          <div class="verification-item">
+            <div class="verification-icon"></div>
+            <div>
+              <div class="verification-label">GST Registered</div>
+              <div class="verification-desc">Business GST number on file</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="wrap">
+        <div class="footer-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:var(--s4);margin-bottom:var(--s5)">
+          <div style="color:var(--color-fg-muted);font-size:0.75rem">CollabTable · Creator Marketplace</div>
+          <div style="color:var(--color-fg-muted);font-size:0.75rem">© 2024 CollabTable. All rights reserved.</div>
+          <div style="color:var(--color-fg-muted);font-size:0.75rem">Terms · Privacy · Guidelines</div>
+        </div>
+      </div>
+</footer>
+
+ <footer class="footer">
+  <div class="wrap">
+    <div class="footer-btm">
+      <span>CollabTable prototype — campaign detail.</span>
+      <span>All amounts in Indian rupees (₹).</span>
+    </div>
+  </div>
+</footer>
+<div class="sheet" id="c-rahul" role="dialog" aria-modal="true" aria-labelledby="c-rahul-t" aria-hidden="true">
+  <div class="sheet-grab" aria-hidden="true"></div>
+  <div class="sheet-head">
+    <div>
+      <h2 class="h4" id="c-rahul-t">Rahul V. — application</h2>
+      <p class="appl-s">Japanese · Mumbai</p>
+    </div>
+    <button class="sheet-x" type="button" data-sheet-close aria-label="Close">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <div class="hair hair-2">
+    <div><span class="mk">Asked for</span><span class="amount od-nowrap">₹32,000</span></div>
+    <div><span class="mk">Campaign range</span><span class="amount amount-gold od-nowrap">₹20K–₹50K</span></div>
+  </div>
+  <p class="appl-s mt-6" style="margin:0">
+    Proposes a reel, a feed post, and a menu shoot on the 14th, and asks to bundle a second campaign into
+    the same visit to reach a better rate.
+  </p>
+  <div class="row-wrap mt-6">
+    <button class="btn btn-primary" type="button" data-sheet="deal-room" data-deal-link="weekend-japanese">Deal Room</button>
+    <button class="btn btn-ghost" type="button" data-sheet-close>Close</button>
+  </div>
+</div>
+
+<div class="sheet" id="c-sana" role="dialog" aria-modal="true" aria-labelledby="c-sana-t" aria-hidden="true">
+  <div class="sheet-grab" aria-hidden="true"></div>
+  <div class="sheet-head">
+    <div>
+      <h2 class="h4" id="c-sana-t">Sana M. — application</h2>
+      <p class="appl-s">Desserts · Mumbai</p>
+    </div>
+    <button class="sheet-x" type="button" data-sheet-close aria-label="Close">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <div class="hair hair-2">
+    <div><span class="mk">Asked for</span><span class="amount od-nowrap">₹45,000</span></div>
+    <div><span class="mk">Campaign range</span><span class="amount amount-gold od-nowrap">₹20K–₹50K</span></div>
+  </div>
+  <p class="appl-s mt-6" style="margin:0">
+    Wants to cover the dessert menu as a separate shoot rather than inside the tasting-menu brief. A
+    better fit if you split the campaign in two.
+  </p>
+  <div class="row-wrap mt-6">
+    <button class="btn btn-primary" type="button" data-sheet="deal-room" data-deal-link="weekend-japanese">Deal Room</button>
+    <button class="btn btn-ghost" type="button" data-sheet-close>Close</button>
+  </div>
+</div>
+
+<!-- ====================================================== deal room pop-up -->
+<!-- One centred pop-up, not a screen. The room is mounted from the shared deal
+     module in assets/app.js, so every surface opens the identical deal; this
+     element only says which side of the deal you are looking at. -->
+<div class="sheet sheet-deal" id="deal-room" role="dialog" aria-modal="true" tabindex="-1"
+     aria-labelledby="deal-room-t" aria-hidden="true"
+     data-deal data-deal-role="restaurant"></div>
+
+<div class="scrim" data-scrim></div>
+<script>
+  // View switching based on URL parameter (works with file:// protocol)
+  (function() {
+    var view = new URLSearchParams(window.location.search).get('view');
+    var creatorView = document.getElementById('view-creator');
+    var restaurantCreatorView = document.getElementById('view-restaurant-creator');
+    var template = document.getElementById('view-restaurant-creator-template');
+
+    // If restaurant-creator view requested, render template content
+    if (view === 'restaurant-creator' && template && restaurantCreatorView) {
+      restaurantCreatorView.innerHTML = template.innerHTML;
+      if (creatorView) creatorView.hidden = true;
+      restaurantCreatorView.hidden = false;
+    } else {
+      // Default to Creator view
+      if (creatorView) creatorView.hidden = false;
+      if (restaurantCreatorView) restaurantCreatorView.hidden = true;
+    }
+  })();
+</script>
+<script src="assets/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<script>try{var ct=localStorage.getItem('ct-theme')||(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',ct);}catch(e){document.documentElement.setAttribute('data-theme','light');}</script>
+<title>CollabTable — Campaign</title>
+<style>
+  :root {
+    --bg:      oklch(97.5% 0.016 60);
+    --surface: oklch(100% 0 0);
+    --fg:      oklch(21% 0.035 300);
+    --muted:   oklch(52% 0.03 290);
+    --border:  oklch(90% 0.022 300);
+    --accent:  oklch(58% 0.19 304);
+    --good:    oklch(52% 0.13 152);
+    --accent-soft: color-mix(in oklch, var(--accent) 12%, transparent);
+    --on-solid:   oklch(100% 0 0);
+    --fg-soft:     color-mix(in oklch, var(--fg) 5%, transparent);
+    --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+    --font-body:    -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+    --font-mono:    ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace;
+    --radius: 14px;
+    --radius-lg: 24px;
+  }
+  *,*::before,*::after{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;}
+  a{color:inherit;text-decoration:none;} button{font:inherit;cursor:pointer;} p{text-wrap:pretty;} h1,h2,h3{text-wrap:balance;}
+  .layout{display:grid;grid-template-columns:228px 1fr;min-height:100vh;}
+  @media(max-width:920px){.layout{grid-template-columns:1fr;}}
+  .side{border-right:1px solid var(--border);background:var(--surface);padding:22px 16px;}
+  .logo{font-weight:700;font-size:16px;display:flex;align-items:center;gap:10px;padding:2px 8px 20px;}
+  .logo .mark{width:26px;height:26px;border-radius:8px;background:var(--accent);color:var(--on-solid);display:grid;place-items:center;font-family:var(--font-mono);font-size:13px;}
+  .nav{display:flex;flex-direction:column;gap:2px;}
+  .nav a{display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:var(--radius);font-size:14px;color:var(--muted);}
+  .nav a.on{background:var(--accent-soft);color:var(--accent);font-weight:600;}
+  .nav a:hover{background:var(--fg-soft);color:var(--fg);}
+  .nav .ic{width:16px;height:16px;}
+  .main{padding:28px 40px;}
+  .view-toggle{display:inline-flex;border:1px solid var(--border);border-radius:999px;overflow:hidden;margin-bottom:22px;}
+  .view-toggle button{padding:8px 16px;border:0;background:transparent;font-size:13px;font-weight:600;color:var(--muted);}
+  .view-toggle button.on{background:var(--fg);color:var(--bg);}
+  .camp-head{display:flex;align-items:center;gap:18px;}
+  .avatar{width:60px;height:60px;border-radius:16px;background:var(--accent-soft);display:grid;place-items:center;font-family:var(--font-mono);font-size:18px;color:var(--accent);font-weight:700;}
+  .eyebrow{font-family:var(--font-mono);font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin:0;}
+  h1{font-size:clamp(26px,3vw,34px);letter-spacing:-0.02em;margin:4px 0 0;}
+  .de{color:var(--muted);font-size:14px;margin-top:4px;}
+  .budget{font-family:var(--font-mono);font-size:22px;font-weight:700;margin-left:auto;text-align:right;}
+  .budget .l{display:block;font-family:var(--font-body);font-size:12px;color:var(--muted);font-weight:500;letter-spacing:0.02em;}
+  .pill{display:inline-flex;align-items:center;padding:4px 10px;border-radius:999px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.03em;background:var(--accent-soft);color:var(--accent);}
+  .cols{display:grid;grid-template-columns:1.2fr 1fr;gap:24px;margin-top:26px;align-items:start;}
+  @media(max-width:920px){.cols{grid-template-columns:1fr;}}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:22px;}
+  .card h2{font-size:15px;letter-spacing:-0.01em;margin:0 0 14px;}
+  .rowl{display:flex;align-items:center;gap:12px;padding:9px 0;font-size:14px;}
+  .rowl .k{color:var(--muted);font-size:13px;min-width:130px;}
+  .rowl .v{font-weight:600;}
+  .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;}
+  .tag{display:inline-flex;padding:4px 10px;border:1px solid var(--border);border-radius:999px;font-size:12px;color:var(--muted);}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 18px;border-radius:var(--radius);border:1px solid transparent;font-size:14.5px;font-weight:600;text-decoration:none;transition:background .15s;cursor:pointer;}
+  .btn:active{transform:translateY(1px);}
+  .btn-primary{background:var(--accent);color:var(--on-solid);border-color:var(--accent);}
+  .btn-primary:hover{background:color-mix(in oklch,var(--accent) 86%,black);}
+  .btn-dark{background:var(--fg);color:var(--bg);border-color:var(--fg);}
+  .btn-dark:hover{background:color-mix(in oklch,var(--fg) 85%,white);}
+  .btn-outline{background:transparent;color:var(--fg);border-color:var(--border);}
+  .btn-outline:hover{border-color:var(--fg);}
+  .btn-lg{width:100%;padding:14px;}
+  .req{font-family:var(--font-mono);font-size:11px;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted);margin:0 0 8px;display:flex;align-items:center;justify-content:space-between;}
+  .app{display:flex;gap:14px;align-items:center;padding:14px 0;border-top:1px solid var(--border);}
+  .app .av2{width:46px;height:46px;border-radius:12px;background:var(--accent-soft);display:grid;place-items:center;font-family:var(--font-mono);font-size:14px;color:var(--accent);font-weight:700;}
+  .app .nm{font-weight:600;font-size:14.5px;}
+  .app .de{color:var(--muted);font-size:12.5px;margin-top:2px;}
+  .app .fee{font-family:var(--font-mono);font-weight:700;font-size:14px;margin-left:auto;white-space:nowrap;}
+  .app-actions{display:flex;gap:8px;margin-top:10px;}
+  .app-actions .btn{flex:1;padding:8px;font-size:13px;}
+  .ok{color:var(--good);font-family:var(--font-mono);font-size:12px;font-weight:700;}
+  /* modal */
+  .backdrop{position:fixed;inset:0;background:color-mix(in oklch,var(--fg) 35%,transparent);display:none;align-items:flex-start;justify-content:center;padding:40px 20px;z-index:50;overflow:auto;}
+  .backdrop.open{display:flex;}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);max-width:520px;width:100%;padding:28px;}
+  .modal h2{font-size:20px;margin:0 0 4px;}
+  .modal .sub{color:var(--muted);font-size:13.5px;margin-bottom:20px;}
+  .field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
+  .field label{font-size:13px;color:var(--muted);}
+  .input,.select,.textarea{width:100%;padding:11px 14px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--fg);font:inherit;font-size:15px;}
+  .input:focus,.select:focus,.textarea:focus{outline:2px solid var(--accent-soft);border-color:var(--accent);}
+  .textarea{min-height:90px;resize:vertical;}
+  .grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;}
+  .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  .modal .foot{display:flex;justify-content:flex-end;gap:10px;margin-top:20px;}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;}
+  .chip{padding:7px 13px;border:1px solid var(--border);border-radius:999px;font-size:13px;color:var(--fg);background:var(--surface);cursor:pointer;}
+  .chip.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);font-weight:600;}
+  .note{background:var(--accent-soft);border:1px solid var(--accent);color:var(--fg);border-radius:var(--radius);padding:12px 14px;font-size:13px;margin-top:16px;}
+  .note b{color:var(--accent);}
+  .meta{font-family:var(--font-mono);font-size:12px;color:var(--muted);}
+  .num{font-family:var(--font-mono);font-variant-numeric:tabular-nums;}
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="side" data-od-id="sidebar">
+    <div class="logo"><span class="mark">C</span>CollabTable</div>
+    <nav class="nav" id="sideNav">
+      <a href="influencer-dashboard.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>Home</a>
+      <a href="discover-restaurants.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Discover</a>
+      <a class="on" href="#"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 12l2 2 4-4"/><path d="M12 3l7 3v6c0 4-3 7-7 9-4-2-7-5-7-9V6z"/></svg>Applications</a>
+      <a href="deal-room.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12a8 8 0 0 1-8 8H4l2-3a8 8 0 1 1 15-5z"/></svg>Messages</a>
+      <a href="deal-room.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/></svg>Earnings</a>
+    </nav>
+  </aside>
+
+  <main class="main" data-od-id="main">
+    <div class="view-toggle" data-od-id="view-toggle">
+      <button class="on" data-role="creator">I'm a creator</button>
+      <button data-role="restaurant">I'm a restaurant</button>
+    </div>
+
+    <!-- CAMPAIGN HEADER -->
+    <div class="camp-head">
+      <div class="avatar">SH</div>
+      <div>
+        <p class="eyebrow">Campaign · Fine-Dining Partner</p>
+        <h1>Weekend Japanese Experience</h1>
+        <div class="de">Food creators · 20K–150K followers · Mumbai metro · deadline Sep 15</div>
+      </div>
+      <div class="budget">₹20K–₹50K<span class="l">Campaign budget</span></div>
+    </div>
+
+    <div class="cols">
+      <div class="card" data-od-id="campaign-details">
+        <h2>Campaign details</h2>
+        <div class="tags" style="margin-bottom:12px;"><span class="pill">Paid collaboration</span><span class="pill">Food</span><span class="tag">On-site visit</span></div>
+        <div class="rowl"><span class="k">Deliverables</span><span class="v">1 Reel · 3 Stories</span></div>
+        <div class="rowl"><span class="k">Deadline</span><span class="v">Sep 15, 2026</span></div>
+        <div class="rowl"><span class="k">Revisions</span><span class="v">1 round</span></div>
+        <div class="rowl"><span class="k">Usage rights</span><span class="v">30 days</span></div>
+        <div class="rowl"><span class="k">Visit</span><span class="v">On-site shoot + tasting — exact address shared after your application is shortlisted</span></div>
+        <div class="rowl"><span class="k">Brief</span><span class="v" style="font-weight:400;">Highlight the new autumn tasting menu and the weekend dining experience. Focus on ambience, live-grill counter and signature omakase.</span></div>
+      </div>
+
+      <!-- CREATOR VIEW -->
+      <div class="card role-creator" data-od-id="apply-panel">
+        <h2>Apply to this campaign</h2>
+        <div class="req">Structured application · no direct contact</div>
+        <p style="color:var(--muted);font-size:13.5px;margin:0 0 16px;">Tell the restaurant why you're a fit and propose your package. Messages with phone numbers or handles are blocked automatically.</p>
+        <button class="btn btn-primary btn-lg" id="applyBtn">Apply Now</button>
+        <div class="note"><b>Identity protected:</b> the restaurant's name &amp; address are revealed only after you're shortlisted, and contact stays in-platform throughout.</div>
+      </div>
+
+      <!-- RESTAURANT VIEW -->
+      <div class="card role-restaurant" data-od-id="applications" style="display:none;">
+        <div class="req">24 applications<span style="color:var(--fg);font-family:var(--font-body);font-weight:600;">2 shortlisted</span></div>
+        <div class="app">
+          <div class="av2">AK</div>
+          <div><div class="nm">Creator Ananya <span class="ok">★ 92%</span></div><div class="de">42K followers · 5.8% eng</div></div>
+          <div class="fee">₹22,000</div>
+        </div>
+        <div class="app-actions"><button class="btn btn-dark">Shortlist</button><button class="btn btn-outline">Reject</button><button class="btn btn-outline">Message</button><button class="btn btn-primary" onclick="document.getElementById('offerModal').classList.add('open')">Make offer</button></div>
+        <div class="app">
+          <div class="av2">RS</div>
+          <div><div class="nm">Creator Rohit <span class="ok">★ 89%</span></div><div class="de">61K followers · 6.4% eng</div></div>
+          <div class="fee">₹30,000</div>
+        </div>
+        <div class="app-actions"><button class="btn btn-dark">Shortlist</button><button class="btn btn-outline">Reject</button><button class="btn btn-outline">Message</button><button class="btn btn-primary" onclick="document.getElementById('offerModal').classList.add('open')">Make offer</button></div>
+        <div class="note"><b>Keep it in-platform:</b> contact details are hidden until you move an application to a deal room.</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- APPLY MODAL -->
+<div class="backdrop" id="applyModal">
+  <div class="modal">
+    <h2>Apply — Weekend Japanese Experience</h2>
+    <div class="sub">Propose your package. The restaurant will review and may send a structured offer.</div>
+    <div class="field"><label>Why are you a good fit?</label><textarea class="textarea">I create food reels for a Mumbai audience (72% Bandra &amp; South) and have covered 4 Japanese restaurant launches this year.</textarea></div>
+    <div class="field"><label>Proposed package</label><div class="chips" style="margin-top:4px;"><button class="chip on">1 Reel</button><button class="chip on">3 Stories</button><button class="chip">Feed post</button><button class="chip">YouTube short</button></div></div>
+    <div class="grid-2">
+      <div class="field"><label>Your proposed fee (₹)</label><input class="input num" value="₹25,000" /></div>
+      <div class="field"><label>On-site visit?</label><select class="select"><option>Included</option><option>Not required</option></select></div>
+    </div>
+    <div class="field"><label>Optional message</label><textarea class="textarea" style="min-height:64px;">I'd love to showcase the tasting menu and weekend ambience in a high-engagement reel.</textarea></div>
+    <div class="note" style="margin-top:0;"><b>Heads-up:</b> any phone number, email or handle in your message will be blocked before reaching the restaurant.</div>
+    <div class="foot">
+      <button class="btn btn-outline" onclick="closeModal('applyModal')">Cancel</button>
+      <button class="btn btn-primary" id="submitApp">Submit Application</button>
+    </div>
+  </div>
+</div>
+
+<!-- OFFER MODAL -->
+<div class="backdrop" id="offerModal">
+  <div class="modal">
+    <h2>Make an offer</h2>
+    <div class="sub">Send a structured offer to Creator Ananya. They can accept, counter or decline.</div>
+    <div class="grid-2">
+      <div class="field"><label>Deliverables</label><input class="input" value="1 Reel + 3 Stories" /></div>
+      <div class="field"><label>Payment (₹)</label><input class="input num" value="₹22,000" /></div>
+      <div class="field"><label>Restaurant visit</label><select class="select"><option>Included</option><option>Not included</option></select></div>
+      <div class="field"><label>Content deadline</label><input class="input" value="Sep 15" /></div>
+      <div class="field"><label>Revisions</label><input class="input num" value="1" /></div>
+      <div class="field"><label>Usage rights</label><select class="select"><option>30 days</option><option>90 days</option><option>Perpetual</option></select></div>
+    </div>
+    <div class="note" style="margin-top:0;"><b>Offer expires in 48 hours.</b> No payment is taken until the creator accepts and you open the deal room.</div>
+    <div class="foot">
+      <button class="btn btn-outline" onclick="closeModal('offerModal')">Cancel</button>
+      <button class="btn btn-primary" id="sendOffer">Send Offer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  function setRole(role){
+    document.querySelectorAll('.view-toggle button').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-role')===role);});
+    document.querySelector('.role-creator').style.display = role==='creator' ? '' : 'none';
+    document.querySelector('.role-restaurant').style.display = role==='restaurant' ? '' : 'none';
+    var navs = role==='creator' ? [
+      ['influencer-dashboard.html','Home'],['discover-restaurants.html','Discover'],['#','Applications'],['deal-room.html','Messages'],['deal-room.html','Earnings']]
+      : [['restaurant-dashboard.html','Dashboard'],['discover-creators.html','Discover'],['#','Campaigns'],['deal-room.html','Messages'],['deal-room.html','Payments']];
+    var icons = {Home:'<rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/>',
+      Discover:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+      Applications:'<path d="M9 12l2 2 4-4"/><path d="M12 3l7 3v6c0 4-3 7-7 9-4-2-7-5-7-9V6z"/>',
+      Campaigns:'<path d="M4 7h16M4 12h10M4 17h16"/>',
+      Messages:'<path d="M21 12a8 8 0 0 1-8 8H4l2-3a8 8 0 1 1 15-5z"/>',
+      Earnings:'<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/>',
+      Payments:'<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/>',
+      Dashboard:'<rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/>'};
+    var html='';
+    navs.forEach(function(n,i){html+='<a '+(n[0]==='#'?'class="on" ':'href="'+n[0]+'"')+'><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">'+(icons[n[1]]||'')+'</svg>'+n[1]+'</a>';});
+    document.getElementById('sideNav').innerHTML=html;
+  }
+  document.querySelectorAll('.view-toggle button').forEach(function(b){b.addEventListener('click',function(){setRole(b.getAttribute('data-role'));});});
+  document.getElementById('applyBtn').addEventListener('click',function(){document.getElementById('applyModal').classList.add('open');});
+  function closeModal(id){document.getElementById(id).classList.remove('open');}
+  document.querySelectorAll('.backdrop').forEach(function(bd){bd.addEventListener('click',function(e){if(e.target===bd)bd.classList.remove('open');});});
+  document.querySelectorAll('.chip').forEach(function(c){c.addEventListener('click',function(){c.classList.toggle('on');});});
+  (function(){
+    function toast(msg){var t=document.getElementById('ctToast');if(!t){t=document.createElement('div');t.id='ctToast';t.style.cssText='position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:1200;background:var(--fg);color:var(--bg);padding:11px 18px;border-radius:999px;font-size:13px;font-family:var(--font-mono);box-shadow:0 6px 24px rgba(0,0,0,.18);opacity:0;transition:opacity .25s;';document.body.appendChild(t);}t.textContent=msg;t.style.opacity='1';clearTimeout(t._t);t._t=setTimeout(function(){t.style.opacity='0';},2600);}
+    function shortlistCount(){return document.querySelectorAll('.role-restaurant .app[data-state="shortlisted"], .role-restaurant .app[data-state="offered"]').length;}
+    function updateMeta(){
+      var el=document.querySelector('.role-restaurant .req');
+      if(!el)return;
+      var total=document.querySelectorAll('.role-restaurant .app').length;
+      el.innerHTML='24 applications<span style="color:var(--fg);font-family:var(--font-body);font-weight:600;"> · '+shortlistCount()+' shortlisted</span>';
+    }
+    document.querySelectorAll('.role-restaurant .app').forEach(function(app){
+      app.setAttribute('data-state','applied');
+      var acts=app.querySelector('.app-actions');
+      if(!acts)return;
+      var nm=app.querySelector('.nm').childNodes[0].textContent.trim();
+      acts.querySelectorAll('button').forEach(function(b){
+        b.addEventListener('click',function(){
+          var t=b.textContent.trim();
+          if(t.indexOf('Shortlist')>=0){
+            app.setAttribute('data-state','shortlisted');
+            b.textContent='Shortlisted ✓';b.classList.remove('btn-dark');b.style.background='var(--accent-soft)';b.style.color='var(--accent)';
+            updateMeta();toast(nm+' shortlisted — move them to a deal room to message.');
+          }else if(t.indexOf('Reject')>=0){
+            app.remove();updateMeta();toast(nm+' rejected.');
+          }else if(t.indexOf('Message')>=0){
+            toast('You can message '+nm+' once you move them into a deal room.');
+          }
+        });
+      });
+    });
+    var sendOffer=document.getElementById('sendOffer');
+    if(sendOffer){
+      sendOffer.addEventListener('click',function(e){
+        e.preventDefault();
+        closeModal('offerModal');
+        var firstApp=document.querySelector('.role-restaurant .app');
+        if(firstApp){firstApp.setAttribute('data-state','offered');updateMeta();}
+        window.location.href='deal-room.html';
+      });
+    }
+    var submitApp=document.querySelector('#applyModal .foot .btn-primary');
+    if(submitApp){
+      submitApp.addEventListener('click',function(e){
+        e.preventDefault();
+        var modal=document.getElementById('applyModal');
+        toast('Application submitted. The restaurant will respond with an offer or message once you are shortlisted.');
+        modal.classList.remove('open');
+      });
+    }
+  })();
+</script>
+<style>
+  :root[data-theme="dark"]{
+    --bg:      oklch(18% 0.025 295);
+    --surface: oklch(24% 0.03 295);
+    --fg:      oklch(93% 0.02 60);
+    --muted:   oklch(66% 0.03 280);
+    --border:  oklch(34% 0.035 295);
+    --accent:  oklch(68% 0.16 304);
+    --good:    oklch(64% 0.14 152);
+    --warn:    oklch(72% 0.16 70);
+    --danger:  oklch(66% 0.18 28);
+    --accent-soft: color-mix(in oklch, var(--accent) 18%, transparent);
+    --fg-soft:     color-mix(in oklch, var(--fg) 7%, transparent);
+  }
+  .theme-toggle{
+    position:fixed;top:14px;right:14px;z-index:1000;
+    display:inline-flex;align-items:center;gap:8px;
+    padding:8px 13px;border:1px solid var(--border);border-radius:999px;
+    background:var(--surface);color:var(--fg);
+    font-family:var(--font-mono);font-size:12px;font-weight:600;
+    letter-spacing:.04em;text-transform:uppercase;cursor:pointer;
+    box-shadow:0 2px 14px color-mix(in oklch, var(--fg) 12%, transparent);
+  }
+  .theme-toggle:hover{background:var(--accent-soft);}
+</style>
+<button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle colour theme">
+  <span id="themeLabel">Dark</span>
+</button>
+<script>
+  (function(){
+    var root=document.documentElement;
+    function applyTheme(t){
+      root.setAttribute('data-theme',t);
+      try{localStorage.setItem('ct-theme',t);}catch(e){}
+      var lab=document.getElementById('themeLabel');
+      if(lab){lab.textContent=(t==='dark')?'Light':'Dark';}
+    }
+    try{
+      var saved=localStorage.getItem('ct-theme');
+      if(saved){applyTheme(saved);}
+      else if(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches){applyTheme('dark');}
+      else{applyTheme('light');}
+    }catch(e){applyTheme('light');}
+    var btn=document.getElementById('themeToggle');
+    if(btn){btn.addEventListener('click',function(){
+      applyTheme(root.getAttribute('data-theme')==='dark'?'light':'dark');
+    });}
+  })();
+</script>
+</body>
+
+</html>

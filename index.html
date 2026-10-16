@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CollabTable — Screens</title>
+<meta name="description" content="CollabTable prototype screen index. Restaurants meet the right food creators.">
+<meta name="theme-color" content="#FE002A">
+<style>
+/* OD-LAYOUT-PRIMITIVES v1 — structure only: display, flex/grid, overflow, wrapping, ratio.
+   Put this @layer first; product CSS outside the layer always wins. */
+@layer od-layout {
+  :where(.od-stack,.od-row,.od-row-top,.od-cluster,.od-grid,.od-field,.od-stat,.od-cell,.od-tile) > :where(*) { min-width: 0; }
+
+  /* containers */
+  .od-stack   { display: flex; flex-direction: column; gap: var(--od-gap, 8px); }
+  .od-row     { display: flex; align-items: center; gap: var(--od-gap, 8px); }
+  .od-row-top { display: flex; align-items: flex-start; gap: var(--od-gap, 8px); }
+  .od-cluster { display: flex; flex-wrap: wrap; align-items: center; gap: var(--od-gap, 8px); }
+  .od-fill    { flex: 1 1 0; min-width: 0; }
+  .od-fixed   { flex: none; }
+  .od-grid    { display: grid; gap: var(--od-gap, 12px); grid-template-columns: repeat(var(--od-cols, 3), minmax(0, 1fr)); }
+
+  /* stacked information: each piece is its own line — never sibling inline spans */
+  .od-stat, .od-field, .od-cell { display: grid; gap: var(--od-gap, 2px); }
+  :where(.od-stat,.od-field,.od-cell) > :where(*) { display: block; }
+  .od-tile { display: grid; grid-template-rows: auto 1fr; }
+  :where(.od-tile) > :where(*) { display: block; }
+
+  /* media keeps its intrinsic ratio by default; never a distorted or cropped
+     cover by accident. height:auto lets the ratio win over an <img height="…">
+     attribute. Cropping to a uniform box is an explicit opt-in: set --od-ratio
+     AND add .od-media-cover together (per the core rule, only where a crop is
+     deliberate — tile thumbs, decorative fills — never on full-frame content). */
+  .od-media { display: block; width: 100%; height: auto; aspect-ratio: var(--od-ratio, auto); }
+  .od-media-cover { object-fit: cover; }
+
+  /* data text only — authored copy is rewritten to its budget instead */
+  .od-truncate { display: block; max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .od-clamp-2, .od-clamp-3 { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+  .od-clamp-2 { -webkit-line-clamp: 2; }
+  .od-clamp-3 { -webkit-line-clamp: 3; }
+  .od-lines-2 { min-height: calc(2 * 1.4em); }   /* block-level reservation for a shared baseline */
+  .od-nowrap  { white-space: nowrap; }           /* 数字+单位 · 价格+起 · 日期+星期 */
+  .od-keep    { word-break: keep-all; overflow-wrap: anywhere; } /* CJK labels break at spaces / <wbr> first */
+
+  /* screen skeleton (optional): bars take their own space, the middle scrolls — no padding guessed for chrome */
+  .od-screen { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; height: 100%; }
+  .od-scroll { overflow-y: auto; overscroll-behavior: contain; min-height: 0; }
+
+  /* horizontal rail: the next item peeks at the edge; trailing room survives overflow */
+  .od-rail { display: flex; gap: var(--od-gap, 8px); overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none;
+             padding-inline: var(--od-rail-pad, 16px); scroll-padding-inline: var(--od-rail-pad, 16px); }
+  .od-rail::-webkit-scrollbar { display: none; }
+  :where(.od-rail) > :where(*) { flex: none; scroll-snap-align: start; }
+  :where(.od-rail) > :where(:last-child) { margin-inline-end: var(--od-rail-pad, 16px); }
+
+  .od-spacer { flex: none; visibility: hidden; pointer-events: none; }
+  .od-touch  { min-width: 44px; min-height: 44px; }
+}
+/* /OD-LAYOUT-PRIMITIVES v1 */
+</style>
+<link rel="stylesheet" href="assets/theme.css">
+<style>
+  .idx-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+  .idx-card { display: flex; flex-direction: column; gap: 14px; padding: 24px; background: var(--surface); border: 1px solid var(--line-10); border-radius: var(--r-lg); transition: border-color 180ms var(--ease-out), background 180ms var(--ease-out), transform 180ms var(--ease-out); }
+  .idx-card:hover { border-color: var(--line-20); background: var(--surface-2); transform: translateY(-2px); }
+  .idx-card[type='button'] { width: 100%; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+  .idx-n { display: block; font-size: 12px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-5); }
+  .idx-t { display: block; font-size: 18px; font-weight: 500; color: var(--fg); }
+  .idx-d { display: block; font-size: 14px; line-height: 1.6; color: var(--muted-fg); }
+  .idx-go { display: inline-flex; align-items: center; gap: 8px; margin-top: auto; font-size: 14px; font-weight: 500; color: var(--fg); }
+  .idx-go svg { transition: transform 180ms var(--ease-out); }
+  .idx-card:hover .idx-go svg { transform: translateX(4px); }
+  .idx-role { display: inline-flex; align-items: center; gap: 6px; }
+</style>
+</head>
+<body>
+<div class="bloom" aria-hidden="true"></div>
+
+<header class="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="index.html" aria-label="CollabTable home">
+      <span class="brand-a">COLLAB</span><span class="brand-b">TABLE</span>
+    </a>
+    <nav class="nav-links" aria-label="Primary">
+      <a class="nav-link" href="landing.html">Overview</a>
+      <a class="nav-link" href="discover-creators.html">For restaurants</a>
+      <a class="nav-link" href="discover-restaurants.html">For creators</a>
+    </nav>
+    <div class="nav-actions">
+      <a class="btn btn-quiet" href="signin.html">Sign in</a>
+      <a class="btn btn-quiet" href="restaurant-onboarding.html">Restaurant signup</a>
+      <a class="btn btn-primary" href="influencer-onboarding.html">Creator signup</a>
+      <button class="burger" type="button" data-burger aria-expanded="false" aria-controls="mnav" aria-label="Open menu">
+        <span></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="mnav" id="mnav" data-mnav aria-hidden="true">
+  <a class="mnav-link" href="signin.html">Sign in</a>
+  <a class="mnav-link" href="landing.html">Overview</a>
+  <a class="mnav-link" href="discover-creators.html">Discover creators</a>
+  <a class="mnav-link" href="discover-restaurants.html">Discover restaurants</a>
+  <a class="mnav-link" href="restaurant-dashboard.html">Restaurant dashboard</a>
+  <a class="mnav-link" href="influencer-dashboard.html">Creator dashboard</a>
+  <a class="mnav-link" href="restaurant-onboarding.html">Restaurant onboarding</a>
+  <a class="mnav-link" href="influencer-onboarding.html">Creator onboarding</a>
+  <a class="mnav-link" href="campaign-detail.html">Campaign detail</a>
+  <a class="mnav-link" href="creators-campaign.html">Creator campaign</a>
+  <a class="mnav-link" href="index.html">All screens</a>
+</div>
+
+<main class="page">
+  <section class="section-lg" style="padding-top:80px">
+    <div class="wrap">
+      <span class="eyebrow eyebrow-red">Prototype screens</span>
+      <h1 class="display">Where restaurants meet<br>the <span class="hl-red">right creators</span>.</h1>
+      <p class="lede mt-6">Eleven screens covering the whole CollabTable path — from a first
+        campaign brief through discovery, negotiation, contract, escrow, delivery, and review.
+        The deal room itself is a pop-up, not a screen.</p>
+      <div class="row-wrap mt-8">
+        <a class="btn btn-primary" href="landing.html">
+          Start with the overview
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </a>
+        <a class="btn btn-ghost" href="discover-creators.html">I run a restaurant</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <div class="hair hair-4">
+        <div>
+          <span class="stat-n">11</span>
+          <span class="stat-c">Screens in this prototype</span>
+        </div>
+        <div>
+          <span class="stat-n">5</span>
+          <span class="stat-c">Deal stages</span>
+        </div>
+        <div>
+          <span class="stat-n">2</span>
+          <span class="stat-c">Sides of the marketplace</span>
+        </div>
+        <div>
+          <span class="stat-n stat-n-red">1</span>
+          <span class="stat-c">Shared deal room pop-up per campaign</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">All screens</span>
+        <h2 class="h2">Pick where to start</h2>
+      </div>
+
+      <h3 class="eyebrow" style="margin-top:8px">For restaurants</h3>
+      <div class="idx-grid mt-6">
+        <a class="idx-card" href="landing.html">
+          <span class="idx-n idx-role">Overview</span>
+          <span class="idx-t">Where Restaurants Meet the Right Creators</span>
+          <span class="idx-d">How CollabTable works end to end, for both sides of the table.</span>
+          <span class="idx-go">Open screen
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </span>
+        </a>
+
+        <a class="idx-card" href="restaurant-onboarding.html">
+          <span class="idx-n idx-role">Onboarding</span>
+          <span class="idx-t">Restaurant onboarding</span>
+          <span class="idx-d">Restaurant details, verification, then budget range before the first brief.</span>
+          <span class="idx-go">Open screen
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </span>
+        </a>
+
+        <a class="idx-card" href="restaurant-dashboard.html">
+          <span class="idx-n idx-role">Dashboard</span>
+          <span class="idx-t">Restaurant dashboard</span>
+          <span class="idx-d">Live campaigns, budget committed, and the creators who applied.</span>
+          <span class="idx-go">Open screen
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </span>
+        </a>
+
+        <a class="idx-card" href="discover-creators.html">
+          <span class="idx-n idx-role">Discovery</span>
+          <span class="idx-t">Discover creators</span>
+          <span class="idx-d">Filter by cuisine, city, and rate to shortlist the right food creators.</span>
+          <span class="idx-go">Open screen
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </span>
+        </a>
+
+        <a class="idx-card" href="creator-profile.html?id=ananya">
+          <span class="idx-n idx-role">Profiles</span>
+          <span class="idx-t">Creator profile</span>
+          <span class="idx-d">Product page per creator with rate range, formats, and a direct link to the deal room.</span>
+          <span class="idx-go">Open screen
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </span>
+        </a>
+
+        <button class="idx-card" type="button" data-sheet="deal-room" data-deal-link="weekend-japanese">Open Deal Room</button>
+        <a class="idx-card" href="deal-flow-test.html">
+          <span class="idx-n idx-role">Test surface</span>
+          <span class="idx-t">Deal flow test</span>
+          <span class="idx-d">Restaurant and creator rooms side by side on one campaign, to check the whole lifecycle.</span>
+          <span class="idx-go">Open screen
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </span>
+        </a>
+      </div>
+
+      <h3 class="eyebrow" style="margin-top:56px">For creators</h3>
+      <div class="idx-grid mt-6">
+        <a class="idx-card" href="influencer-onboarding.html">
+          <span class="idx-n idx-role">Onboarding</span>
+          <span class="idx-t">Creator onboarding</span>
+          <span class="idx-d">Profile, social handles, cuisine niches, then a rate card.</span>
+          <span class="idx-go">Open screen
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </span>
+        </a>
+
+        <a class="idx-card" href="influencer-dashboard.html">
+          <span class="idx-n idx-role">Dashboard</span>
+          <span class="idx-t">Creator dashboard</span>
+          <span class="idx-d">Matches, applications, and earnings from delivered campaigns.</span>
+          <span class="idx-go">Open screen
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </span>
+        </a>
+
+        <a class="idx-card" href="discover-restaurants.html">
+          <span class="idx-n idx-role">Discovery</span>
+          <span class="idx-t">Discover restaurants &amp; campaigns</span>
+          <span class="idx-d">Browse open campaigns and apply with a rate inside your range.</span>
+          <span class="idx-go">Open screen
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </span>
+        </a>
+
+        <a class="idx-card" href="restaurant-profile.html?id=sakura-house">
+          <span class="idx-n idx-role">Profiles</span>
+          <span class="idx-t">Restaurant &amp; campaign profile</span>
+          <span class="idx-d">One page per restaurant campaign with closing date, brief, and the deal room.</span>
+          <span class="idx-go">Open screen
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">The shared rule</span>
+        <h2 class="h2">Contact details stay on the table</h2>
+      </div>
+      <div class="grid grid-3">
+        <div class="panel">
+          <span class="well well-line" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10.5" width="16" height="10" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg>
+          </span>
+          <span class="idx-t mt-6">Masked by default</span>
+          <p class="idx-d mt-6">Phones, emails, and handles are hidden from both sides until a deal is agreed.</p>
+        </div>
+        <div class="panel">
+          <span class="well well-line" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.2 8.3-8 9-4.8-.7-8-4.5-8-9V6l8-3Z"/><path d="m9 12 2 2 4-4"/></svg>
+          </span>
+          <span class="idx-t mt-6">Unlocked on agreement</span>
+          <p class="idx-d mt-6">Once the offer and contract are accepted in the deal room, both sides can proceed.</p>
+        </div>
+        <div class="panel">
+          <span class="well well-line" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>
+          </span>
+          <span class="idx-t mt-6">Paper trail</span>
+          <p class="idx-d mt-6">Every term, message, and payment is recorded against the campaign in escrow.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer-top">
+      <div style="max-width:280px">
+        <span class="brand"><span class="brand-a">COLLAB</span><span class="brand-b">TABLE</span></span>
+        <p class="idx-d mt-6">Where restaurants meet the right creators.</p>
+      </div>
+      <div>
+        <span class="footer-h">Screens</span>
+        <a class="footer-link" href="signin.html">Sign in</a>
+        <a class="footer-link" href="landing.html">Overview</a>
+        <a class="footer-link" href="restaurant-onboarding.html">Restaurant onboarding</a>
+        <a class="footer-link" href="influencer-onboarding.html">Creator onboarding</a>
+      </div>
+      <div>
+        <span class="footer-h">Marketplace</span>
+        <a class="footer-link" href="discover-creators.html">Discover creators</a>
+        <a class="footer-link" href="discover-restaurants.html">Discover campaigns</a>
+        <a class="footer-link" href="campaign-detail.html">Campaign detail</a>
+      </div>
+      <div>
+        <span class="footer-h">Deal flow</span>
+        <button class="footer-link" type="button" data-sheet="deal-room" data-deal-link="weekend-japanese">Deal Room</button>
+        <a class="footer-link" href="restaurant-dashboard.html">Restaurant dashboard</a>
+        <a class="footer-link" href="influencer-dashboard.html">Creator dashboard</a>
+      </div>
+    </div>
+    <div class="footer-btm">
+      <span>CollabTable prototype — editable HTML source.</span>
+      <span>All amounts in Indian rupees (₹).</span>
+    </div>
+  </div>
+</footer>
+
+<!-- ====================================================== deal room pop-up -->
+<!-- One centred pop-up, not a screen. The room is mounted from the shared deal
+     module in assets/app.js, so every surface opens the identical deal; this
+     element only says which side of the deal you are looking at. -->
+<div class="sheet sheet-deal" id="deal-room" role="dialog" aria-modal="true" tabindex="-1"
+     aria-labelledby="deal-room-t" aria-hidden="true"
+     data-deal data-deal-role="restaurant"></div>
+
+<div class="scrim" data-scrim></div>
+<script src="assets/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ananya Sharma — Campaign Details | CollabTable</title>
+<meta name="description" content="Creator Ananya Sharma's campaign details for restaurant evaluation: portfolio, stats, services, pricing, reviews, and verification.">
+<meta name="theme-color" content="#FE002A">
+<style>
+/* OD-LAYOUT-PRIMITIVES v1 — structure only: display, flex/grid, overflow, wrapping, ratio.
+   Put this @layer first; product CSS outside the layer always wins. */
+@layer od-layout {
+  :where(.od-stack,.od-row,.od-row-top,.od-cluster,.od-grid,.od-field,.od-stat,.od-cell,.od-tile) > :where(*) { min-width: 0; }
+
+  /* containers */
+  .od-stack   { display: flex; flex-direction: column; gap: var(--od-gap, 8px); }
+  .od-row     { display: flex; align-items: center; gap: var(--od-gap, 8px); }
+  .od-row-top { display: flex; align-items: flex-start; gap: var(--od-gap, 8px); }
+  .od-cluster { display: flex; flex-wrap: wrap; align-items: center; gap: var(--od-gap, 8px); }
+  .od-fill    { flex: 1 1 0; min-width: 0; }
+  .od-fixed   { flex: none; }
+  .od-grid    { display: grid; gap: var(--od-gap, 12px); grid-template-columns: repeat(var(--od-cols, 3), minmax(0, 1fr)); }
+
+  /* stacked information: each piece is its own line — never sibling inline spans */
+  .od-stat, .od-field, .od-cell { display: grid; gap: var(--od-gap, 2px); }
+  :where(.od-stat,.od-field,.od-cell) > :where(*) { display: block; }
+  .od-tile { display: grid; grid-template-rows: auto 1fr; }
+  :where(.od-tile) > :where(*) { display: block; }
+
+  /* media keeps its intrinsic ratio by default; never a distorted or cropped
+     cover by accident. height:auto lets the ratio win over an <img height="…">
+     attribute. Cropping to a uniform box is an explicit opt-in: set --od-ratio
+     AND add .od-media-cover together (per the core rule, only where a crop is
+     deliberate — tile thumbs, decorative fills — never on full-frame content). */
+  .od-media { display: block; width: 100%; height: auto; aspect-ratio: var(--od-ratio, auto); }
+  .od-media-cover { object-fit: cover; }
+
+  /* data text only — authored copy is rewritten to its budget instead */
+  .od-truncate { display: block; max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .od-clamp-2, .od-clamp-3 { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+  .od-clamp-2 { -webkit-line-clamp: 2; }
+  .od-clamp-3 { -webkit-line-clamp: 3; }
+  .od-lines-2 { min-height: calc(2 * 1.4em); }
+  .od-nowrap  { white-space: nowrap; }
+  .od-keep    { word-break: keep-all; overflow-wrap: anywhere; }
+
+  /* screen skeleton (optional): bars take their own space, the middle scrolls — no padding guessed for chrome */
+  .od-screen { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; height: 100%; }
+  .od-scroll { overflow-y: auto; overscroll-behavior: contain; min-height: 0; }
+
+  /* horizontal rail: the next item peeks at the edge; trailing room survives overflow */
+  .od-rail { display: flex; gap: var(--od-gap, 8px); overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none;
+             padding-inline: var(--od-rail-pad, 16px); scroll-padding-inline: var(--od-rail-pad, 16px); }
+  .od-rail::-webkit-scrollbar { display: none; }
+  :where(.od-rail) > :where(*) { flex: none; scroll-snap-align: start; }
+  :where(.od-rail) > :where(:last-child) { margin-inline-end: var(--od-rail-pad, 16px); }
+
+  .od-spacer { flex: none; visibility: hidden; pointer-events: none; }
+  .od-touch  { min-width: 44px; min-height: 44px; }
+}
+/* /OD-LAYOUT-PRIMITIVES v1 */
+
+:root {
+  --color-bg: #000;
+  --color-surface: #111;
+  --color-surface-2: #1a1a1a;
+  --color-surface-3: #222;
+  --color-fg: #fff;
+  --color-fg-muted: #a3a3a3;
+  --color-primary: #FE002A;
+  --color-primary-press: #E0001F;
+  --color-primary-12: rgba(254,0,42,0.12);
+  --color-primary-15: rgba(254,0,42,0.15);
+  --color-gold: #D4AF37;
+  --color-gold-light: #E8C877;
+  --color-gold-lighter: #F3D98B;
+  --color-gold-lighter2: #F7E3A4;
+  --color-border: rgba(255,255,255,0.05);
+  --color-border-strong: rgba(255,255,255,0.1);
+  --color-border-subtle: rgba(255,255,255,0.2);
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --font-sans: 'Ubuntu', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'SF Mono', 'Fira Code', monospace;
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 24px;
+  --s6: 32px;
+  --s7: 48px;
+  --s8: 64px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-pill: 9999px;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+  --shadow-lg: 0 12px 32px rgba(0,0,0,0.5);
+  --shadow-xl: 0 20px 50px -15px rgba(254,0,42,0.65);
+  --shadow-gold: 0 8px 24px rgba(212,175,55,0.25);
+  --shadow-deep: 0 24px 48px rgba(0,0,0,0.7);
+  --transition-fast: 150ms ease;
+  --transition-normal: 250ms ease;
+  --transition-slow: 400ms ease;
+  --z-dropdown: 100;
+  --z-modal: 200;
+  --z-toast: 300;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+body {
+  font-family: var(--font-sans);
+  background: var(--color-bg);
+  color: var(--color-fg);
+  line-height: 1.6;
+  text-align: left;
+}
+a { color: inherit; text-decoration: none; }
+img { max-width: 100%; height: auto; display: block; }
+button { font-family: inherit; font-size: inherit; cursor: pointer; border: none; background: none; }
+input, select, textarea { font-family: inherit; font-size: inherit; }
+
+/* Layout */
+.page { min-height: 100vh; display: flex; flex-direction: column; }
+.wrap { max-width: 1200px; margin: 0 auto; padding: var(--s4) var(--s4); width: 100%; }
+
+/* Header */
+.header {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(0,0,0,0.9); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--color-border);
+  padding: var(--s3) var(--s4);
+}
+.header-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: var(--s4); }
+.logo { font-weight: 700; font-size: 1.25rem; color: var(--color-fg); letter-spacing: -0.02em; }
+.logo span { color: var(--color-primary); }
+.nav { display: flex; align-items: center; gap: var(--s3); }
+.nav-link { color: var(--color-fg-muted); font-size: 0.875rem; padding: var(--s1) var(--s2); border-radius: var(--radius-sm); transition: color var(--transition-fast), background var(--transition-fast); }
+.nav-link:hover, .nav-link[aria-current="page"] { color: var(--color-fg); background: var(--color-surface-2); }
+.nav-actions { display: flex; align-items: center; gap: var(--s2); }
+
+/* Buttons */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--s1); padding: var(--s2) var(--s3); font-size: 0.875rem; font-weight: 600; border-radius: var(--radius-pill); white-space: nowrap; transition: all var(--transition-fast); }
+.btn-primary { background: var(--color-primary); color: #fff; }
+.btn-primary:hover { background: var(--color-primary-press); }
+.btn-ghost { color: var(--color-fg); background: transparent; border: 1px solid var(--color-border-strong); }
+.btn-ghost:hover { background: var(--color-surface-2); border-color: var(--color-border-subtle); }
+.btn-quiet { color: var(--color-fg-muted); }
+.btn-quiet:hover { color: var(--color-fg); }
+.btn-sm { padding: var(--s1) var(--s2); font-size: 0.8125rem; }
+
+/* Burger menu */
+.burger { display: none; flex-direction: column; gap: 5px; width: 24px; height: 18px; padding: 0; background: none; border: none; cursor: pointer; }
+.burger span { display: block; height: 2px; background: var(--color-fg); border-radius: 2px; transition: transform var(--transition-normal), opacity var(--transition-normal); }
+.burger[aria-expanded="true"] span:nth-child(1) { transform: translateY(8px) rotate(45deg); }
+.burger[aria-expanded="true"] span:nth-child(2) { opacity: 0; }
+.burger[aria-expanded="true"] span:nth-child(3) { transform: translateY(-8px) rotate(-45deg); }
+
+/* Mobile nav */
+.mnav { display: none; position: fixed; inset: 0 0 0 auto; background: var(--color-surface); border-left: 1px solid var(--color-border); padding: var(--s5) var(--s4); flex-direction: column; gap: var(--s2); z-index: 100; max-width: 280px; width: 100%; }
+.mnav[aria-hidden="false"] { display: flex; }
+.mnav-link { padding: var(--s2) var(--s3); font-size: 1rem; font-weight: 500; color: var(--color-fg); border-radius: var(--radius-md); }
+.mnav-link:hover, .mnav-link[aria-current="page"] { background: var(--color-surface-2); color: var(--color-primary); }
+
+/* Main */
+.main { flex: 1; padding: var(--s5) var(--s4); }
+
+/* Hero */
+.hero {
+  text-align: left;
+  padding: var(--s6) 0 var(--s5);
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: var(--s5);
+}
+.hero-content { max-width: 800px; }
+.eyebrow { display: inline-flex; align-items: center; gap: var(--s1); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-primary); margin-bottom: var(--s3); }
+.eyebrow .dot { width: 6px; height: 6px; background: var(--color-primary); border-radius: 50%; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+.h1 { font-size: clamp(2.5rem, 5vw, 4rem); font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; margin-bottom: var(--s3); color: var(--color-fg); }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s3); margin-top: var(--s4); color: var(--color-fg-muted); font-size: 0.875rem; }
+.hero-meta .item { display: inline-flex; align-items: center; gap: var(--s1); }
+.hero-meta .dot { width: 4px; height: 4px; background: var(--color-border-strong); border-radius: 50%; }
+
+/* Sections */
+.section { margin-bottom: var(--s6); }
+.section-title { font-size: 1.25rem; font-weight: 700; margin-bottom: var(--s4); color: var(--color-fg); }
+.section-subtitle { color: var(--color-fg-muted); margin-top: -var(--s2); margin-bottom: var(--s4); font-size: 0.875rem; }
+
+/* Stats */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--s4); }
+.stat { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: var(--s5); text-align: left; }
+.stat-value { font-size: 2rem; font-weight: 700; color: var(--color-fg); line-height: 1.2; }
+.stat-label { font-size: 0.875rem; color: var(--color-fg-muted); margin-top: var(--s1); }
+
+/* Portfolio - 3D Ferris Wheel Carousel */
+.portfolio-carousel {
+  --cc-card-width: 320px;
+  --cc-aspect-ratio: 0.5625; /* 16:9 */
+  --cc-gap: 24px;
+  --cc-radius: 12px;
+  --cc-fade: #000000;
+  --cc-fade-opacity: 0.55;
+  --cc-inner-shade: 0.4;
+  --cc-tilt: -5deg;
+  --cc-perspective: 2500px;
+  --cc-speed: 14;
+  --cc-autoplay: drift;
+  --cc-interval: 3s;
+  --cc-momentum: 0.6;
+  --cc-snap: true;
+  --cc-pause-on-hover: true;
+  --cc-parallax: 0.3;
+  --cc-stretch: 0.5;
+  --cc-depth-fade: 0.55;
+  --cc-inner-shade-opacity: 0.6;
+  --cc-corner-radius: 12px;
+  --cc-fade-color: #000000;
+  --cc-inner: 0.4;
+}
+
+.cc-carousel {
+  position: relative;
+  width: 100%;
+  height: 560px;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.cc-carousel__view {
+  position: absolute;
+  inset: 0;
+  perspective: var(--cc-perspective);
+  transform-style: preserve-3d;
+}
+
+.cc-carousel__stage {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+}
+
+.cc-carousel__camera {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+}
+
+.cc-carousel__ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform-style: preserve-3d;
+  transform: translate(-50%, -50%) rotateY(0deg);
+}
+
+.cc-carousel__card {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform-style: preserve-3d;
+  cursor: grab;
+}
+
+.cc-carousel__card:active { cursor: grabbing; }
+
+.cc-carousel__tile {
+  position: absolute;
+  transform-style: preserve-3d;
+  backface-visibility: visible;
+}
+
+.cc-carousel__frame {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--cc-corner-radius);
+  overflow: hidden;
+  position: relative;
+  background: var(--color-surface-2);
+}
+
+.cc-carousel__photo {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  backface-visibility: hidden;
+}
+
+.cc-carousel__photo--leaving {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  animation: cc-leave 700ms ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes cc-leave {
+  0% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.85); }
+}
+
+.cc-carousel__inner {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0, var(--cc-inner-shade));
+  backface-visibility: hidden;
+}
+
+.cc-carousel__shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 40%, var(--cc-fade) 100%);
+  opacity: var(--cc-fade-opacity);
+  pointer-events: none;
+}
+
+.cc-carousel__caption {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.cc-carousel__title {
+  display: block;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+}
+
+.cc-carousel__subtitle {
+  display: block;
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.7);
+  margin-top: 4px;
+}
+
+.cc-carousel__count {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  color: rgba(255,255,255,0.8);
+}
+
+.cc-carousel__digits {
+  display: inline-flex;
+  overflow: hidden;
+}
+
+.cc-carousel__digit {
+  display: inline-flex;
+  flex-direction: column;
+}
+
+.cc-carousel__reel {
+  display: flex;
+  flex-direction: column;
+  will-change: transform;
+  transition: transform 300ms ease-out;
+}
+
+.cc-carousel__live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.cc-carousel__indicator {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.cc-carousel__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.3);
+  transition: background 200ms ease, transform 200ms ease;
+}
+
+.cc-carousel__dot--active {
+  background: var(--color-primary);
+  transform: scale(1.3);
+}
+
+/* Intro animations */
+.cc-carousel__card {
+  transition: transform 1500ms cubic-bezier(0.16, 1, 0.3, 1), opacity 1500ms ease-out;
+  opacity: 0;
+}
+
+.cc-carousel__card--visible {
+  opacity: 1;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .cc-carousel__card {
+    transition: none !important;
+  }
+  .cc-carousel__photo--leaving {
+    animation: none !important;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .cc-carousel {
+    height: 480px;
+  }
+}
+
+@media (max-width: 768px) {
+  .cc-carousel {
+    height: 400px;
+  }
+}
+
+/* Services & Deliverables */
+.services-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--s4); }
+.service-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--s4); transition: box-shadow var(--transition-normal); }
+.service-card:hover { box-shadow: var(--shadow-md); }
+.service-icon { width: 40px; height: 40px; border-radius: var(--radius-md); background: var(--color-primary-15); display: flex; align-items: center; justify-content: center; margin-bottom: var(--s3); }
+.service-icon svg { width: 20px; height: 20px; color: var(--color-primary); }
+.service-title { font-weight: 600; font-size: 0.875rem; color: var(--color-fg); margin-bottom: var(--s1); }
+.service-desc { font-size: 0.75rem; color: var(--color-fg-muted); line-height: 1.4; }
+.service-price { font-size: 0.875rem; color: var(--color-primary); font-weight: 600; margin-top: var(--s2); }
+
+/* Availability */
+.availability-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--s4); }
+.availability-item { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--s4); }
+.availability-label { font-weight: 600; font-size: 0.875rem; color: var(--color-fg); margin-bottom: var(--s1); }
+.availability-desc { font-size: 0.75rem; color: var(--color-fg-muted); line-height: 1.4; }
+
+/* Pricing */
+.pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--s4); }
+.pricing-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--s4); text-align: left; }
+.pricing-tag { display: inline-block; padding: var(--s1) var(--s2); background: var(--color-primary-12); color: var(--color-primary); font-size: 0.75rem; font-weight: 600; border-radius: var(--radius-sm); margin-bottom: var(--s2); }
+.pricing-name { font-weight: 600; font-size: 0.875rem; color: var(--color-fg); margin-bottom: var(--s1); }
+.pricing-desc { font-size: 0.75rem; color: var(--color-fg-muted); line-height: 1.4; margin-bottom: var(--s2); }
+.pricing-features { font-size: 0.75rem; color: var(--color-fg-muted); line-height: 1.5; }
+.pricing-features li { margin-bottom: var(--s1); list-style: none; }
+.pricing-features li::before { content: "✓"; color: var(--color-success); margin-right: var(--s1); }
+
+/* Reviews */
+.reviews-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--s4); }
+.review-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--s4); transition: box-shadow var(--transition-normal); }
+.review-card:hover { box-shadow: var(--shadow-md); }
+.review-avatar { width: 48px; height: 48px; border-radius: var(--radius-pill); background: var(--color-primary-15); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.75rem; color: var(--color-primary); }
+.review-body { flex: 1; }
+.review-header { display: flex; align-items: center; gap: var(--s3); margin-bottom: var(--s2); }
+.review-name { font-weight: 600; font-size: 0.875rem; color: var(--color-fg); }
+.review-date { font-size: 0.75rem; color: var(--color-fg-muted); }
+.review-text { font-size: 0.875rem; line-height: 1.5; color: var(--color-fg); margin-bottom: var(--s2); }
+.rating { color: var(--color-warning); font-size: 0.875rem; margin-left: var(--s2); }
+
+/* Deal Room CTA */
+.deal-cta {
+  background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: var(--s5) var(--s4); margin-top: var(--s6); }
+  .deal-cta .btn-primary { justify-content: center; }
+  .deal-cta .btn-primary:hover { background: var(--color-primary-press); }
+
+/* Verification */
+.verification-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--s4); }
+.verification-item { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--s4); }
+.verification-icon { width: 20px; height: 20px; border-radius: 50%; background: var(--color-success); flex-shrink: 0; display: flex; align-items: center; justify-content: center; margin-right: var(--s3); }
+.verification-label { font-weight: 600; font-size: 0.875rem; color: var(--color-fg); }
+.verification-desc { font-size: 0.75rem; color: var(--color-fg-muted); line-height: 1.4; }
+
+/* Mobile menu */
+@media (max-width: 768px) {
+  .mnav { display: flex; }
+  .burger { display: flex; }
+  .nav { display: none; }
+  .hero { padding: var(--s5) 0 var(--s4); }
+  .hero-content, .stats-grid, .portfolio-grid, .services-grid, .availability-grid, .pricing-grid, .reviews-grid, .verification-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+  <div class="page">
+    <header class="header">
+      <div class="header-inner">
+        <a href="#" class="logo">CollabTable<span>.</span></a>
+        <nav class="nav-actions">
+          <button class="btn btn-ghost btn-sm" aria-label="Back">Back</button>
+        </nav>
+      </div>
+    </header>
+    <main class="main">
+      <!-- Hero / Creator Header -->
+      <section class="section" id="creator-header">
+        <div class="hero">
+          <div class="hero-content">
+            <div class="eyebrow">Restaurant View</div>
+            <h1 class="h1">Ananya Sharma</h1>
+            <p class="hero-meta">
+              <span class="item"><span class="dot"></span>Food Blogger</span>
+              <span class="item"><span class="dot"></span>127K followers</span>
+              <span class="item"><span class="dot"></span>4.2% engagement</span>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Stats -->
+      <section class="section" id="stats">
+        <h2 class="section-title">Creator Stats</h2>
+        <div class="stats-grid">
+          <div class="stat">
+            <div class="stat-value">127K</div>
+            <div class="stat-label">Followers</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value">4.2%</div>
+            <div class="stat-label">Avg Engagement</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value">84</div>
+            <div class="stat-label">Campaigns Completed</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value">4.9</div>
+            <div class="stat-label">★ Rating</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value">24h</div>
+            <div class="stat-label">Avg Response</div>
+          </div>
+        </div>
+      </section>
+
+<!-- Portfolio / Work Samples - 3D Ferris Wheel Carousel -->
+      <section class="section" id="portfolio">
+        <h2 class="section-title">Portfolio / Work Samples</h2>
+        <p class="section-subtitle">Drag, scroll, or click to navigate • Click card to focus</p>
+        <div class="cc-carousel" id="portfolio-carousel" data-axis="y" data-tilt="-5" data-perspective="2500" data-gap="24" data-card-width="320" data-aspect-ratio="0.5625" data-speed="14" data-autoplay="drift" data-interval="3" data-draggable="true" data-momentum="0.6" data-snap="true" data-pause-on-hover="true" data-parallax="0.3" data-stretch="0.5" data-depth-fade="0.55" data-inner-shade="0.6" data-corner-radius="12" data-fade-color="#000000">
+          <div class="cc-carousel__view">
+            <div class="cc-carousel__stage">
+              <div class="cc-carousel__camera">
+                <div class="cc-carousel__ring" id="cc-ring"></div>
+              </div>
+            </div>
+          </div>
+          <div class="cc-carousel__caption" id="cc-caption" aria-hidden="true">
+            <span class="cc-carousel__title" id="cc-title"></span>
+            <span class="cc-carousel__subtitle" id="cc-subtitle"></span>
+          </div>
+          <div class="cc-carousel__indicator" id="cc-indicator" aria-hidden="true"></div>
+          <div class="cc-carousel__live" aria-live="polite" aria-atomic="true" id="cc-live"></div>
+        </div>
+      </section>
+
+      <!-- Services & Deliverables -->
+      <section class="section" id="services">
+        <h2 class="section-title">Services & Deliverables</h2>
+        <div class="services-grid">
+          <div class="service-card">
+            <div class="service-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7L8 5zM5 19h14L13.5 9H5z"/></svg></div>
+            <div>
+              <div class="service-title">Reel (Single)</div>
+              <div class="service-desc">One vertical Reel up to 60s. Product showcase, brand integration, 2 revisions.</div>
+            </div>
+            <div class="service-price">₹15,000</div>
+          </div>
+          <div class="service-card">
+            <div class="service-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 7h16c1.1 0 2 .9 2 2v10c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V9c0-1.1.9-2 2-2zm16 4h-3l-2-8H5l-2 8H4v2h16v-2h-3zm-5-10c1.66 0 3 1.34 3 3v2c0 1.66-1.34 3-3 3s-3-1.34-3-3v-2c0-1.66 1.34-3 3-3zm0 12c1.66 0 3 1.34 3 3v2c0 1.66-1.34 3-3 3s-3-1.34-3-3v-2c0-1.66 1.34-3 3-3zm-7-5h2v14H7v-2h2v-8h2v-2h2v8h2v-2h2V7h2V5h2v2h2V5h2z"/></svg></div>
+            <div>
+              <div class="service-title">Reel Series (3 Reels)</div>
+              <div class="service-desc">Three vertical Reels up to 60s each. Consistent theme, cross-promotion, 3 revisions per reel.</div>
+            </div>
+            <div class="service-price">₹38,000</div>
+          </div>
+          <div class="service-card">
+            <div class="service-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7L8 5zM5 19h14L13.5 9H5z"/></svg></div>
+            <div>
+              <div class="service-title">Stories (10 Stories)</div>
+              <div class="service-desc">Ten story-format posts up to 15s each. Behind-the-scenes, Q&A, product highlights, 2 revisions.</div>
+            </div>
+            <div class="service-price">₹12,000</div>
+          </div>
+          <div class="service-card">
+            <div class="service-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M1 13a5 5 0 0 1 5-5h13a5 5 0 0 1 5 5v2a5 5 0 0 1-5 5h-2a5 5 0 0 1-5-5v-2zm14 2c0 2.21-1.79 4-4 4h-6.34l.94 4.51-4.95-2.88 1.06-4.79H1zM7 17h10v2H7v-2zm0 4h6v2H7v-2zm-2-10c2.76 0 5 2.24 5 5v2c0 1.1.9 2 2 2h3c1.1 0 2-.9 2-2v-5c0-2.21-1.79-5-5-5h-3c-1.1 0-2 .9-2 2v5zm2.5 7c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5s-1.12-2.5-2.5-2.5zm5 7c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5s-1.12-2.5-2.5-2.5zm-8.51-2.16l.76 2.05.81-3.06L5.5 11.53l-1.06 2.87.75 2.05L3.19 5.08l2.06.96.89-3.15L2 5.08l1.06-2.87.76-2.05L1 3.03l2.58 1.81l3.96-1.97L5 8.08l2.15 3.52L5.18 15.08L4.29 12.61l1.86 3.47L2 8.08l3.78 1.96L4.18 5.08z"/></svg></div>
+            <div>
+              <div class="service-title">Stories & Photography</div>
+              <div class="service-desc">Five story-format posts plus three product photography shoots. Mixed media package for maximum exposure.</div>
+            </div>
+            <div class="service-price">₹28,000</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Availability -->
+      <section class="section" id="availability">
+        <h2 class="section-title">Availability & Logistics</h2>
+        <div class="availability-grid">
+          <div class="availability-item">
+            <div class="availability-label">Notice Period</div>
+            <div class="availability-desc">7 days minimum for booking confirmation</div>
+          </div>
+          <div class="availability-item">
+            <div class="availability-label">Shoot Duration</div>
+            <div class="availability-desc">2-4 hours per Reel / 1-2 hours per Story</div>
+          </div>
+          <div class="availability-item">
+            <div class="availability-label">Travel</div>
+            <div class="availability-desc">Within Mumbai • Outstation on request</div>
+          </div>
+          <div class="availability-item">
+            <div class="availability-label">Team</div>
+            <div class="availability-desc">1 cameraperson • 1 stylist • Editor included</div>
+          </div>
+          <div class="availability-item">
+            <div class="availability-label">Equipment</div>
+            <div class="availability-desc">Sony A7S III • DJI Mavic 3 • Ring Light • Audio kit</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Pricing -->
+      <section class="section" id="pricing">
+        <h2 class="section-title">Pricing & Rates</h2>
+        <div class="pricing-grid">
+          <div class="pricing-card">
+            <div class="pricing-tag">Base Rate</div>
+            <div class="pricing-name">Single Reel (up to 60s)</div>
+            <div class="pricing-desc">Product showcase, brand integration, 2 revisions included.</div>
+            <ul class="pricing-features">
+              <li>Vertical format (9:16)</li>
+              <li>Up to 60 seconds</li>
+              <li>2 shooting locations</li>
+              <li>Basic color grading</li>
+            </ul>
+          </div>
+          <div class="pricing-card">
+            <div class="pricing-tag">Extended</div>
+            <div class="pricing-name">Reel Series (3 Reels)</div>
+            <div class="pricing-desc">Three Reels with consistent theme, cross-promotion, 3 revisions each.</div>
+            <ul class="pricing-features">
+              <li>Vertical format (9:16)</li>
+              <li>Up to 60s per Reel</li>
+              <li>Consistent visual theme</li>
+              <li>3 shooting locations</li>
+            </ul>
+          </div>
+          <div class="pricing-card">
+            <div class="pricing-tag">Premium</div>
+            <div class="pricing-name">Full Package</div>
+            <div class="pricing-desc">All deliverables + priority scheduling • Unlimited revisions • Usage rights extension.</div>
+            <ul class="pricing-features">
+              <li>All deliverables included</li>
+              <li>Priority scheduling</li>
+              <li>Unlimited revisions</li>
+              <li>Extended usage rights</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- Reviews -->
+      <section class="section" id="reviews">
+        <h2 class="section-title">Client Reviews</h2>
+        <div class="reviews-grid">
+          <article class="review-card">
+            <div class="review-avatar">A</div>
+            <div class="review-body">
+              <div class="review-header">
+                <div class="review-name">Rajesh Tiwari</div>
+                <div class="review-date">23 Oct 2024</div>
+              </div>
+              <div class="review-text">"Ananya delivered exceptional Reel content for our fashion brand. 4.8M views in first week. Professional, punctual, creative direction was on point."</div>
+              <div class="rating">★★★★★</div>
+            </div>
+          </article>
+          <article class="review-card">
+            <div class="review-avatar">S</div>
+            <div class="review-body">
+              <div class="review-header">
+                <div class="review-name">Neha B.</div>
+                <div class="review-date">15 Oct 2024</div>
+              </div>
+              <div class="review-text">"Best content creator we've worked with. Stories drove 67K engagements. Reliable, communicative, delivers on time every time."</div>
+              <div class="rating">★★★★★</div>
+            </div>
+          </article>
+          <article class="review-card">
+            <div class="review-avatar">V</div>
+            <div class="review-body">
+              <div class="review-header">
+                <div class="review-name">Kunal M.</div>
+                <div class="review-date">08 Oct 2024</div>
+              </div>
+              <div class="review-text">"Best content creator we've worked with. Stories drove 67K engagements. Reliable, communicative, delivers on time every time."</div>
+              <div class="rating">★★★★★</div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <!-- Deal Room CTA -->
+      <section class="section deal-cta" id="deal-room-cta">
+        <h2 class="section-title">Start Collaboration</h2>
+        <p class="section-subtitle">Ready to work with Ananya Sharma? Open the Deal Room to negotiate terms, review deliverables, and start the collaboration process.</p>
+        <button class="btn btn-primary">Open Deal Room</button>
+      </section>
+
+      <!-- Verification -->
+      <section class="section" id="verification">
+        <h2 class="section-title">Verification & Trust</h2>
+        <div class="verification-grid">
+          <div class="verification-item">
+            <div class="verification-icon"></div>
+            <div>
+              <div class="verification-label">Identity Verified</div>
+              <div class="verification-desc">Government ID verified on platform</div>
+            </div>
+          </div>
+          <div class="verification-item">
+            <div class="verification-icon"></div>
+            <div>
+              <div class="verification-label">Phone Verified</div>
+              <div class="verification-desc">Mobile number OTP verified</div>
+            </div>
+          </div>
+          <div class="verification-item">
+            <div class="verification-icon"></div>
+            <div>
+              <div class="verification-label">Email Verified</div>
+              <div class="verification-desc">Email address verified</div>
+            </div>
+          </div>
+          <div class="verification-item">
+            <div class="verification-icon"></div>
+            <div>
+              <div class="verification-label">Instagram Connected</div>
+              <div class="verification-desc">Instagram account linked</div>
+            </div>
+          </div>
+          <div class="verification-item">
+            <div class="verification-icon"></div>
+            <div>
+              <div class="verification-label">Portfolio Authentic</div>
+              <div class="verification-desc">Work samples verified original</div>
+            </div>
+          </div>
+          <div class="verification-item">
+            <div class="verification-icon"></div>
+            <div>
+              <div class="verification-label">GST Registered</div>
+              <div class="verification-desc">Business GST number on file</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+    <footer class="footer">
+      <div class="wrap">
+        <div class="footer-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:var(--s4);margin-bottom:var(--s5)">
+          <div style="color:var(--color-fg-muted);font-size:0.75rem">CollabTable · Creator Marketplace</div>
+          <div style="color:var(--color-fg-muted);font-size:0.75rem">© 2024 CollabTable. All rights reserved.</div>
+          <div style="color:var(--color-fg-muted);font-size:0.75rem">Terms · Privacy · Guidelines</div>
+        </div>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>

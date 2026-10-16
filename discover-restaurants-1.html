@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<script>try{var ct=localStorage.getItem('ct-theme')||(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',ct);}catch(e){document.documentElement.setAttribute('data-theme','light');}</script>
+<title>CollabTable — Discover Restaurants & Campaigns</title>
+<style>
+  :root {
+    --bg:      oklch(97.5% 0.016 60);
+    --surface: oklch(100% 0 0);
+    --fg:      oklch(21% 0.035 300);
+    --muted:   oklch(52% 0.03 290);
+    --border:  oklch(90% 0.022 300);
+    --accent:  oklch(58% 0.19 304);
+    --good:    oklch(52% 0.13 152);
+    --accent-soft: color-mix(in oklch, var(--accent) 12%, transparent);
+    --on-solid:   oklch(100% 0 0);
+    --fg-soft:     color-mix(in oklch, var(--fg) 5%, transparent);
+    --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+    --font-body:    -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+    --font-mono:    ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace;
+    --radius: 14px;
+    --radius-lg: 24px;
+  }
+  *,*::before,*::after{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;}
+  a{color:inherit;text-decoration:none;} button{font:inherit;cursor:pointer;} p{text-wrap:pretty;} h1,h2,h3{text-wrap:balance;}
+  .layout{display:grid;grid-template-columns:250px 1fr;min-height:100vh;}
+  @media(max-width:920px){.layout{grid-template-columns:1fr;}}
+  .side{border-right:1px solid var(--border);background:var(--surface);padding:22px 18px;}
+  .logo{font-weight:700;font-size:16px;display:flex;align-items:center;gap:10px;padding:2px 8px 20px;}
+  .logo .mark{width:26px;height:26px;border-radius:8px;background:var(--accent);color:var(--on-solid);display:grid;place-items:center;font-family:var(--font-mono);font-size:13px;}
+  .nav{display:flex;flex-direction:column;gap:2px;margin-bottom:22px;}
+  .nav a{display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:var(--radius);font-size:14px;color:var(--muted);}
+  .nav a.on{background:var(--accent-soft);color:var(--accent);font-weight:600;}
+  .nav a:hover{background:var(--fg-soft);color:var(--fg);}
+  .nav .ic{width:16px;height:16px;}
+  .fil{display:flex;flex-direction:column;gap:16px;}
+  .fil h4{font-family:var(--font-mono);font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin:0 0 8px;}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;}
+  .chip{padding:6px 12px;border:1px solid var(--border);border-radius:999px;font-size:12.5px;color:var(--fg);background:var(--surface);}
+  .chip.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);font-weight:600;}
+  .input,.select{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--fg);font:inherit;font-size:13.5px;}
+  .main{padding:28px 32px;}
+  .eyebrow{font-family:var(--font-mono);font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin:0;}
+  h1{font-size:clamp(26px,3vw,32px);letter-spacing:-0.02em;margin:4px 0 0;}
+  .bar{display:flex;align-items:center;gap:12px;margin-top:18px;}
+  .search{flex:1;position:relative;}
+  .search input{width:100%;padding:12px 16px 12px 40px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);font:inherit;font-size:14.5px;}
+  .search svg{position:absolute;left:14px;top:13px;width:16px;height:16px;color:var(--muted);}
+  .count{margin:20px 0 14px;font-family:var(--font-mono);font-size:12px;color:var(--muted);}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;}
+  .card.head{border-color:var(--accent);}
+  .rest{display:flex;gap:14px;align-items:center;}
+  .rest .avatar{width:52px;height:52px;border-radius:14px;background:var(--accent-soft);display:grid;place-items:center;font-family:var(--font-mono);font-size:15px;color:var(--accent);font-weight:700;}
+  .rest .nm{font-weight:700;font-size:16px;}
+  .rest .de{color:var(--muted);font-size:12.5px;margin-top:1px;}
+  .rate{margin-left:auto;text-align:right;font-family:var(--font-mono);font-size:13px;font-weight:700;}
+  .stars{color:var(--accent);letter-spacing:1px;}
+  .camp{margin:16px 0;padding:14px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);}
+  .camp .ct{font-weight:700;font-size:15px;}
+  .camp .cd{color:var(--muted);font-size:12.5px;margin-top:3px;}
+  .tags{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0;}
+  .tag{display:inline-flex;padding:3px 9px;border:1px solid var(--border);border-radius:999px;font-size:11.5px;color:var(--muted);}
+  .pill{display:inline-flex;align-items:center;padding:4px 10px;border-radius:999px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.03em;background:var(--accent-soft);color:var(--accent);}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 16px;border-radius:var(--radius);border:1px solid transparent;font-size:14px;font-weight:600;text-decoration:none;transition:background .15s;}
+  .btn:active{transform:translateY(1px);}
+  .btn-primary{background:var(--accent);color:var(--on-solid);border-color:var(--accent);}
+  .btn-primary:hover{background:color-mix(in oklch,var(--accent) 86%,black);}
+  .btn-outline{background:transparent;color:var(--fg);border-color:var(--border);}
+  .btn-outline:hover{border-color:var(--fg);}
+  .row{display:flex;gap:8px;}
+  .btn-fill{flex:1;}
+  .eye{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted);margin-top:10px;}
+  .eye svg{width:12px;height:12px;}
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="side" data-od-id="sidebar">
+    <div class="logo"><span class="mark">C</span>CollabTable</div>
+    <nav class="nav">
+      <a href="influencer-dashboard.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>Home</a>
+      <a class="on" href="#"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Discover</a>
+      <a href="campaign-detail.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 12l2 2 4-4"/><path d="M12 3l7 3v6c0 4-3 7-7 9-4-2-7-5-7-9V6z"/></svg>Applications</a>
+      <a href="deal-room.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12a8 8 0 0 1-8 8H4l2-3a8 8 0 1 1 15-5z"/></svg>Messages</a>
+      <a href="deal-room.html"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/></svg>Earnings</a>
+    </nav>
+    <div class="fil" data-od-id="filters">
+      <div><h4>Location</h4><select class="select"><option>Mumbai — Bandra</option><option>Mumbai</option><option>Pune</option><option>Bengaluru</option></select></div>
+      <div><h4>Cuisine</h4><div class="chips"><button class="chip on">Japanese</button><button class="chip">Italian</button><button class="chip">Café</button><button class="chip">Indian</button><button class="chip">Bakery</button></div></div>
+      <div><h4>Budget / campaign</h4><div class="chips"><button class="chip">Under ₹10K</button><button class="chip on">₹10K–₹25K</button><button class="chip">₹25K–₹50K</button><button class="chip">₹50K+</button></div></div>
+      <div><h4>Collaboration type</h4><div class="chips"><button class="chip on">Paid</button><button class="chip">Complimentary</button><button class="chip">Paid + comp</button><button class="chip">Event</button></div></div>
+      <div><h4>Restaurant type</h4><div class="chips"><button class="chip on">Fine dining</button><button class="chip">Café</button><button class="chip">QSR</button><button class="chip">Bar</button></div></div>
+      <div><h4>Amenities</h4><div class="chips"><button class="chip">Vegetarian</button><button class="chip">Vegan</button><button class="chip">Halal</button><button class="chip">Pet friendly</button><button class="chip">Family friendly</button></div></div>
+      <div><h4>Deliverables</h4><div class="chips"><button class="chip on">Reel</button><button class="chip">Story</button><button class="chip">Feed post</button><button class="chip">Visit</button></div></div>
+    </div>
+  </aside>
+
+  <main class="main" data-od-id="main">
+    <p class="eyebrow">Creator · @ananya.eats</p>
+    <h1>Discover restaurants &amp; campaigns</h1>
+    <div class="bar">
+      <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input value="Restaurants in Bandra · ₹10K–₹25K · Paid collaboration" /></div>
+      <button class="btn btn-primary" style="flex:none;padding-inline:22px;">Search</button>
+    </div>
+    <p class="count" data-od-id="count">38 campaigns match your Food &amp; Lifestyle niche · Bandra</p>
+
+    <div class="grid" data-od-id="campaign-grid">
+      <div class="card head" data-cuis="Japanese" data-budget="20000,50000" data-type="Fine dining" data-collab="Paid" data-dl="Reel,Story,Visit" data-name="Weekend Japanese Experience">
+        <div class="rest">
+          <div class="avatar">JP</div>
+          <div><div class="nm">Japanese Fine Dining</div><div class="de">Fine dining · Japanese · omakase tasting menu</div></div>
+          <div class="rate"><span class="stars">★★★★★</span><br><span style="font-size:12px;color:var(--muted);">4.8</span></div>
+        </div>
+        <div class="camp">
+          <div class="ct">Weekend Japanese Experience</div>
+          <div class="cd">Paid Collaboration · On-site visit · deadline Sep 15</div>
+        </div>
+        <div class="tags"><span class="tag">1 Reel</span><span class="tag">3 Stories</span><span class="tag">On-site visit</span><span class="tag">20K–100K</span></div>
+        <div class="row-between" style="display:flex;align-items:center;justify-content:space-between;"><span class="pill">₹20K–₹50K</span><a class="btn btn-primary" href="campaign-detail.html">View campaign</a></div>
+        <div class="eye"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Name &amp; address hidden — location revealed after a deal is agreed</div>
+      </div>
+
+      <div class="card" data-cuis="Italian" data-budget="25000,40000" data-type="Bar" data-collab="Paid" data-dl="Reel,Story" data-name="Weekend Cocktail Series Launch">
+        <div class="rest">
+          <div class="avatar">CB</div>
+          <div><div class="nm">Premium Cocktail Bar</div><div class="de">Bar · Italian · weekend cocktail series</div></div>
+          <div class="rate"><span class="stars">★★★★★</span><br><span style="font-size:12px;color:var(--muted);">4.6</span></div>
+        </div>
+        <div class="camp">
+          <div class="ct">Weekend Cocktail Series Launch</div>
+          <div class="cd">Paid · On-site visit · deadline Sep 20</div>
+        </div>
+        <div class="tags"><span class="tag">2 Reels</span><span class="tag">3 Stories</span><span class="tag">50K–150K</span></div>
+        <div class="row-between" style="display:flex;align-items:center;justify-content:space-between;"><span class="pill">₹25K–₹40K</span><a class="btn btn-primary" href="campaign-detail.html">View campaign</a></div>
+        <div class="eye"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Name &amp; address hidden — location revealed after a deal is agreed</div>
+      </div>
+
+      <div class="card" data-cuis="Café" data-budget="12000,20000" data-type="Café" data-collab="Paid + comp" data-dl="Reel,Story,Visit" data-name="New Brunch Menu — Food Creator">
+        <div class="rest">
+          <div class="avatar">CA</div>
+          <div><div class="nm">All-day Café</div><div class="de">Café · brunch &amp; dessert menus</div></div>
+          <div class="rate"><span class="stars">★★★★☆</span><br><span style="font-size:12px;color:var(--muted);">4.4</span></div>
+        </div>
+        <div class="camp">
+          <div class="ct">New Brunch Menu — Food Creator</div>
+          <div class="cd">Paid + complimentary · deadline Sep 25</div>
+        </div>
+        <div class="tags"><span class="tag">1 Reel</span><span class="tag">2 Stories</span><span class="tag">On-site visit</span></div>
+        <div class="row-between" style="display:flex;align-items:center;justify-content:space-between;"><span class="pill">₹12K–₹20K</span><a class="btn btn-primary" href="campaign-detail.html">View campaign</a></div>
+        <div class="eye"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Name &amp; address hidden — location revealed after a deal is agreed</div>
+      </div>
+    </div>
+  </main>
+</div>
+<script>
+  (function(){
+    function toast(msg){var t=document.getElementById('ctToast');if(!t){t=document.createElement('div');t.id='ctToast';t.style.cssText='position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:1200;background:var(--fg);color:var(--bg);padding:11px 18px;border-radius:999px;font-size:13px;font-family:var(--font-mono);box-shadow:0 6px 24px rgba(0,0,0,.18);opacity:0;transition:opacity .25s;';document.body.appendChild(t);}t.textContent=msg;t.style.opacity='1';clearTimeout(t._t);t._t=setTimeout(function(){t.style.opacity='0';},2400);}
+    var grid=document.getElementById('campaign-grid');
+    var cards=[].slice.call(grid.querySelectorAll('.card'));
+    var count=document.getElementById('count');
+    function chipVal(group){return [].slice.call(document.querySelectorAll('.fil .chips .chip')).filter(function(c){return c.classList.contains('on')&&c.parentNode.parentNode.querySelector('h4')&&c.parentNode.parentNode.querySelector('h4').textContent===group;}).map(function(c){return c.textContent.trim();});}
+    function selVal(group){var d=[].slice.call(document.querySelectorAll('.fil div')).find(function(div){var h=div.querySelector('h4');return h&&h.textContent===group&&div.querySelector('select');});return d?d.querySelector('select').value:'';}
+    function band(v){if(v<10000)return 'Under ₹10K';if(v<=25000)return '₹10K–₹25K';if(v<=50000)return '₹25K–₹50K';return '₹50K+';}
+    function overlap(chip,min,max){var lo=0,hi=Infinity;if(/Under ₹10K/.test(chip)){lo=0;hi=10000;}else if(/₹10K–₹25K/.test(chip)){lo=10000;hi=25000;}else if(/₹25K–₹50K/.test(chip)){lo=25000;hi=50000;}else if(/₹50K\+/.test(chip)){lo=50000;hi=Infinity;}return min<hi&&max>lo;}
+    function applyFilter(){
+      var search=(document.querySelector('.search input')||{}).value||'';
+      var cuis=chipVal('Cuisine'),budget=chipVal('Budget / campaign'),collab=chipVal('Collaboration type'),rtype=chipVal('Restaurant type'),amen=chipVal('Amenities'),dl=chipVal('Deliverables');
+      var loc=selVal('Location');
+      var shown=0,hidden=[];
+      cards.forEach(function(cd){
+        var name=cd.getAttribute('data-name');
+        var b=(cd.getAttribute('data-budget')||'0,100000000').split(',').map(function(x){return parseInt(x,10);});
+        var min=b[0],max=b[1];
+        var cs=(cd.getAttribute('data-cuis')||'').split(','),cls=(cd.getAttribute('data-collab')||''),rs=(cd.getAttribute('data-type')||''),dls=(cd.getAttribute('data-dl')||'').split(','),am=(cd.getAttribute('data-amen')||'').split(',');
+        var city=(loc==='Mumbai — Bandra'||loc==='Mumbai')?'Mumbai':loc;
+        var ok=true;
+        if(search){var hay=(name+' '+cs.join(' ')+' '+cls+' '+rs).toLowerCase();if(hay.indexOf(search.toLowerCase())<0)ok=false;}
+        if(ok&&cuis.length){if(!cuis.some(function(x){return cs.indexOf(x)>=0;}))ok=false;}
+        if(ok&&budget.length){if(!budget.some(function(x){return overlap(x,min,max);}))ok=false;}
+        if(ok&&collab.length){if(collab.indexOf(cls)<0)ok=false;}
+        if(ok&&rtype.length){if(rtype.indexOf(rs)<0)ok=false;}
+        if(ok&&dl.length){if(!dl.some(function(x){return dls.indexOf(x)>=0;}))ok=false;}
+        if(ok&&amen.length){if(!amen.some(function(x){return am.indexOf(x)>=0;})){ok=false;}}
+        if(ok&&loc&&city!=='Mumbai'){ok=false;}
+        cd.style.display=ok?'':'none';
+        if(ok)shown++;else hidden.push(name);
+      });
+      count.innerHTML=shown+' campaign'+(shown===1?'':'s')+' match your filters'+(hidden.length?' — hidden: '+hidden.join(', '):'');
+    }
+    document.querySelectorAll('.fil .chips .chip').forEach(function(c){c.addEventListener('click',function(){c.classList.toggle('on');applyFilter();});});
+    document.querySelectorAll('.fil select').forEach(function(s){s.addEventListener('change',applyFilter);});
+    var si=document.querySelector('.search input');if(si)si.addEventListener('input',applyFilter);
+    var btn=document.querySelector('.bar .btn-primary');if(btn)btn.addEventListener('click',function(){applyFilter();toast('Showing matches for your Food &amp; Lifestyle niche');});
+  })();
+</script>
+<style>
+  :root[data-theme="dark"]{
+    --bg:      oklch(18% 0.025 295);
+    --surface: oklch(24% 0.03 295);
+    --fg:      oklch(93% 0.02 60);
+    --muted:   oklch(66% 0.03 280);
+    --border:  oklch(34% 0.035 295);
+    --accent:  oklch(68% 0.16 304);
+    --good:    oklch(64% 0.14 152);
+    --warn:    oklch(72% 0.16 70);
+    --danger:  oklch(66% 0.18 28);
+    --accent-soft: color-mix(in oklch, var(--accent) 18%, transparent);
+    --fg-soft:     color-mix(in oklch, var(--fg) 7%, transparent);
+  }
+  .theme-toggle{
+    position:fixed;top:14px;right:14px;z-index:1000;
+    display:inline-flex;align-items:center;gap:8px;
+    padding:8px 13px;border:1px solid var(--border);border-radius:999px;
+    background:var(--surface);color:var(--fg);
+    font-family:var(--font-mono);font-size:12px;font-weight:600;
+    letter-spacing:.04em;text-transform:uppercase;cursor:pointer;
+    box-shadow:0 2px 14px color-mix(in oklch, var(--fg) 12%, transparent);
+  }
+  .theme-toggle:hover{background:var(--accent-soft);}
+</style>
+<button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle colour theme">
+  <span id="themeLabel">Dark</span>
+</button>
+<script>
+  (function(){
+    var root=document.documentElement;
+    function applyTheme(t){
+      root.setAttribute('data-theme',t);
+      try{localStorage.setItem('ct-theme',t);}catch(e){}
+      var lab=document.getElementById('themeLabel');
+      if(lab){lab.textContent=(t==='dark')?'Light':'Dark';}
+    }
+    try{
+      var saved=localStorage.getItem('ct-theme');
+      if(saved){applyTheme(saved);}
+      else if(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches){applyTheme('dark');}
+      else{applyTheme('light');}
+    }catch(e){applyTheme('light');}
+    var btn=document.getElementById('themeToggle');
+    if(btn){btn.addEventListener('click',function(){
+      applyTheme(root.getAttribute('data-theme')==='dark'?'light':'dark');
+    });}
+  })();
+</script>
+</body>
+
+</html>

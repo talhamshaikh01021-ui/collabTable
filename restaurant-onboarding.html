@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Restaurant signup — CollabTable</title>
+<meta name="description" content="Create your CollabTable restaurant account: details, branches, social links, objectives, creator preferences, budget, then verification.">
+<meta name="theme-color" content="#FE002A">
+<style>
+/* OD-LAYOUT-PRIMITIVES v1 — structure only: display, flex/grid, overflow, wrapping, ratio.
+   Put this @layer first; product CSS outside the layer always wins. */
+@layer od-layout {
+  :where(.od-stack,.od-row,.od-row-top,.od-cluster,.od-grid,.od-field,.od-stat,.od-cell,.od-tile) > :where(*) { min-width: 0; }
+
+  /* containers */
+  .od-stack   { display: flex; flex-direction: column; gap: var(--od-gap, 8px); }
+  .od-row     { display: flex; align-items: center; gap: var(--od-gap, 8px); }
+  .od-row-top { display: flex; align-items: flex-start; gap: var(--od-gap, 8px); }
+  .od-cluster { display: flex; flex-wrap: wrap; align-items: center; gap: var(--od-gap, 8px); }
+  .od-fill    { flex: 1 1 0; min-width: 0; }
+  .od-fixed   { flex: none; }
+  .od-grid    { display: grid; gap: var(--od-gap, 12px); grid-template-columns: repeat(var(--od-cols, 3), minmax(0, 1fr)); }
+
+  /* stacked information: each piece is its own line — never sibling inline spans */
+  .od-stat, .od-field, .od-cell { display: grid; gap: var(--od-gap, 2px); }
+  :where(.od-stat,.od-field,.od-cell) > :where(*) { display: block; }
+  .od-tile { display: grid; grid-template-rows: auto 1fr; }
+  :where(.od-tile) > :where(*) { display: block; }
+
+  /* media keeps its intrinsic ratio by default; never a distorted or cropped
+     cover by accident. height:auto lets the ratio win over an <img height="…">
+     attribute. Cropping to a uniform box is an explicit opt-in: set --od-ratio
+     AND add .od-media-cover together (per the core rule, only where a crop is
+     deliberate — tile thumbs, decorative fills — never on full-frame content). */
+  .od-media { display: block; width: 100%; height: auto; aspect-ratio: var(--od-ratio, auto); }
+  .od-media-cover { object-fit: cover; }
+
+  /* data text only — authored copy is rewritten to its budget instead */
+  .od-truncate { display: block; max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .od-clamp-2, .od-clamp-3 { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+  .od-clamp-2 { -webkit-line-clamp: 2; }
+  .od-clamp-3 { -webkit-line-clamp: 3; }
+  .od-lines-2 { min-height: calc(2 * 1.4em); }   /* block-level reservation for a shared baseline */
+  .od-nowrap  { white-space: nowrap; }           /* 数字+单位 · 价格+起 · 日期+星期 */
+  .od-keep    { word-break: keep-all; overflow-wrap: anywhere; } /* CJK labels break at spaces / <wbr> first */
+
+  /* screen skeleton (optional): bars take their own space, the middle scrolls — no padding guessed for chrome */
+  .od-screen { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; height: 100%; }
+  .od-scroll { overflow-y: auto; overscroll-behavior: contain; min-height: 0; }
+
+  /* horizontal rail: the next item peeks at the edge; trailing room survives overflow */
+  .od-rail { display: flex; gap: var(--od-gap, 8px); overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none;
+             padding-inline: var(--od-rail-pad, 16px); scroll-padding-inline: var(--od-rail-pad, 16px); }
+  .od-rail::-webkit-scrollbar { display: none; }
+  :where(.od-rail) > :where(*) { flex: none; scroll-snap-align: start; }
+  :where(.od-rail) > :where(:last-child) { margin-inline-end: var(--od-rail-pad, 16px); }
+
+  .od-spacer { flex: none; visibility: hidden; pointer-events: none; }
+  .od-touch  { min-width: 44px; min-height: 44px; }
+}
+/* /OD-LAYOUT-PRIMITIVES v1 */
+</style>
+<link rel="stylesheet" href="assets/theme.css">
+<style>
+  .ob-shell { display: grid; gap: var(--s6); padding-top: var(--s7); padding-bottom: var(--s9); }
+  .ob-card { padding: var(--s6); background: var(--surface); border: 1px solid var(--line-10); border-radius: var(--r-xl); }
+  .ob-h { display: block; font-size: var(--f-2xl); font-weight: 500; color: var(--fg); }
+  .ob-h:focus { outline: none; }
+  .ob-p { display: block; max-width: var(--measure); font-size: var(--f-sm); color: var(--muted-fg); }
+  .ob-cols { display: grid; gap: var(--s4); grid-template-columns: 1fr; }
+  .ob-nav { display: flex; align-items: center; justify-content: space-between; gap: var(--s4); padding-top: var(--s5); border-top: 1px solid var(--line-05); }
+  .ob-side-t { display: block; font-weight: 500; color: var(--fg); }
+  .ob-side-s { display: block; margin-top: var(--s1); font-size: var(--f-xs); color: var(--muted-fg); }
+  .ob-drop { display: grid; place-items: center; gap: var(--s2); padding: var(--s6); border: 1px dashed var(--line-20); border-radius: var(--r-lg); text-align: center; }
+  .ob-sec { display: grid; gap: var(--s5); padding-top: var(--s5); margin-top: var(--s5); border-top: 1px solid var(--line-05); }
+  @media (min-width: 768px) { .ob-cols { grid-template-columns: 1fr 1fr; } }
+  @media (min-width: 1024px) { .ob-shell { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<div class="bloom" aria-hidden="true"></div>
+
+<header class="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="index.html" aria-label="CollabTable home">
+      <span class="brand-a">COLLAB</span><span class="brand-b">TABLE</span>
+    </a>
+    <nav class="nav-links" aria-label="Primary">
+      <a class="nav-link" href="landing.html">Overview</a>
+      <a class="nav-link" href="discover-creators.html" aria-current="page">For restaurants</a>
+      <a class="nav-link" href="discover-restaurants.html">For creators</a>
+    </nav>
+    <div class="nav-actions">
+      <a class="btn btn-quiet" href="index.html">All screens</a>
+      <a class="btn btn-primary" href="influencer-onboarding.html">Creator signup</a>
+      <button class="burger" type="button" data-burger aria-expanded="false" aria-controls="mnav" aria-label="Open menu">
+        <span></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="mnav" id="mnav" data-mnav aria-hidden="true">
+  <a class="mnav-link" href="index.html">All screens</a>
+  <a class="mnav-link" href="landing.html">Overview</a>
+  <a class="mnav-link" href="restaurant-onboarding.html" aria-current="page">Restaurant signup</a>
+  <a class="mnav-link" href="restaurant-dashboard.html">Restaurant dashboard</a>
+  <a class="mnav-link" href="discover-creators.html">Discover creators</a>
+  <a class="mnav-link" href="campaign-detail.html">Campaign detail</a>
+</div>
+
+<main class="page">
+  <div class="wrap">
+    <div class="ob-shell" data-stepper data-step-validate>
+
+      <!-- ------------------------------------------------ stepper rail -->
+      <div>
+        <span class="eyebrow eyebrow-red">Restaurant signup</span>
+        <h1 class="h2">Create your restaurant account</h1>
+        <p class="ob-p mt-6">Eight short steps. Verification keeps creators confident, and your budget
+          band is what makes your campaigns show up in the right searches.</p>
+
+        <div class="steps steps-dense mt-6">
+          <span class="step" data-step data-on="true" data-done="false">
+            <span class="step-dot">1</span><span class="step-label">Account</span>
+          </span>
+          <span class="step-line"></span>
+          <span class="step" data-step data-on="false" data-done="false">
+            <span class="step-dot">2</span><span class="step-label">Details</span>
+          </span>
+          <span class="step-line"></span>
+          <span class="step" data-step data-on="false" data-done="false">
+            <span class="step-dot">3</span><span class="step-label">Branches</span>
+          </span>
+          <span class="step-line"></span>
+          <span class="step" data-step data-on="false" data-done="false">
+            <span class="step-dot">4</span><span class="step-label">Social</span>
+          </span>
+          <span class="step-line"></span>
+          <span class="step" data-step data-on="false" data-done="false">
+            <span class="step-dot">5</span><span class="step-label">Objectives</span>
+          </span>
+          <span class="step-line"></span>
+          <span class="step" data-step data-on="false" data-done="false">
+            <span class="step-dot">6</span><span class="step-label">Creators</span>
+          </span>
+          <span class="step-line"></span>
+          <span class="step" data-step data-on="false" data-done="false">
+            <span class="step-dot">7</span><span class="step-label">Budget</span>
+          </span>
+          <span class="step-line"></span>
+          <span class="step" data-step data-on="false" data-done="false">
+            <span class="step-dot">8</span><span class="step-label">Verify</span>
+          </span>
+        </div>
+        <p class="hint mt-6" data-step-live role="status" aria-live="polite">Step 1 of 8</p>
+      </div>
+
+      <!-- ------------------------------------------------------ panes -->
+      <div>
+        <!-- step 1 — account basics -->
+        <section class="ob-card pane" data-pane>
+          <div>
+            <h2 class="ob-h">Account basics</h2>
+            <p class="ob-p mt-6">These are your sign-in details. Campaign updates, application alerts,
+              and payment receipts go to this email and phone.</p>
+          </div>
+
+          <form data-form data-reset data-success="Account basics saved." novalidate>
+            <div class="form-sum" data-form-summary role="alert"></div>
+
+            <div class="ob-cols">
+              <div class="field">
+                <label class="label label-req" for="o-name">Owner or manager name</label>
+                <input class="input" id="o-name" name="oname" type="text" required autocomplete="name" placeholder="Asha Menon">
+                <p class="err" data-ok="">Use the name the team knows you by.</p>
+              </div>
+              <div class="field">
+                <label class="label label-req" for="o-email">Work email</label>
+                <input class="input" id="o-email" name="oemail" type="email" required autocomplete="email" placeholder="you@restaurant.com">
+                <p class="err" data-ok="">Use an address you check — campaign updates go there.</p>
+              </div>
+            </div>
+
+            <div class="ob-cols mt-6">
+              <div class="field">
+                <label class="label label-req" for="o-phone">Mobile number</label>
+                <input class="input" id="o-phone" name="ophone" type="tel" required autocomplete="tel" placeholder="+91 98200 00000">
+                <p class="err" data-ok="">Include the country code so we can send the OTP.</p>
+                <p class="hint">Masked from creators until a deal is accepted.</p>
+              </div>
+              <div class="field">
+                <label class="label label-req" for="o-pass">Password</label>
+                <input class="input" id="o-pass" name="opass" type="password" required autocomplete="new-password"
+                       data-match="^.{8,}$" placeholder="At least 8 characters">
+                <p class="err" data-ok="">Eight characters or more. Longer is better than trickier.</p>
+              </div>
+            </div>
+
+            <div class="field mt-6" data-req-group id="g-terms">
+              <span class="label label-req">Confirmation</span>
+              <label class="check">
+                <input type="checkbox" name="terms">
+                <span class="check-box" aria-hidden="true"></span>
+                <span>I agree to the CollabTable terms and confirm I can authorise campaigns for this restaurant.</span>
+              </label>
+              <p class="err" data-ok="">Please confirm before we create the account.</p>
+            </div>
+
+            <div class="ob-nav mt-6">
+              <span class="hint">Step 1 of 8</span>
+              <button class="btn btn-primary" type="button" data-step-next>
+                Continue
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <!-- step 2 — restaurant details -->
+        <section class="ob-card pane" data-pane>
+          <div>
+            <h2 class="ob-h">Restaurant details</h2>
+            <p class="ob-p mt-6">Creators see this on your campaign page, so keep it plain and accurate.</p>
+          </div>
+
+          <form data-form data-reset data-success="Restaurant details saved." novalidate>
+            <div class="form-sum" data-form-summary role="alert"></div>
+
+            <div class="ob-cols">
+              <div class="field">
+                <label class="label label-req" for="r-name">Restaurant name</label>
+                <input class="input" id="r-name" name="name" type="text" required autocomplete="organization" placeholder="Sakura House">
+                <p class="err" data-ok="">Enter the name your signage shows.</p>
+              </div>
+              <div class="field">
+                <label class="label label-req" for="r-type">Restaurant type</label>
+                <select class="select" id="r-type" name="rtype" required>
+                  <option value="">Select a type</option>
+                  <option>Restaurant</option>
+                  <option>Café</option>
+                  <option>Cloud Kitchen</option>
+                  <option>Bar</option>
+                  <option>Bakery</option>
+                  <option>Fast Food</option>
+                  <option>Fine Dining</option>
+                  <option>Other</option>
+                </select>
+                <p class="err" data-ok="">Pick the type that best describes the room.</p>
+              </div>
+            </div>
+
+            <div class="field mt-6">
+              <label class="label label-req" for="r-about">About the restaurant</label>
+              <textarea class="textarea" id="r-about" name="about" required
+                        placeholder="Two lines on the menu, the room, and what a shoot day looks like."></textarea>
+              <p class="err" data-ok="">Two or three lines is enough. This is the first thing a creator reads.</p>
+            </div>
+
+            <div class="ob-sec">
+              <div class="field" data-req-group id="g-cuisine">
+                <span class="label label-req">Cuisine</span>
+                <div class="opt-grid" role="group" aria-label="Cuisine">
+                  <label class="check opt"><input type="checkbox" name="cuisine"><span class="check-box" aria-hidden="true"></span><span>Indian</span></label>
+                  <label class="check opt"><input type="checkbox" name="cuisine"><span class="check-box" aria-hidden="true"></span><span>Chinese</span></label>
+                  <label class="check opt"><input type="checkbox" name="cuisine"><span class="check-box" aria-hidden="true"></span><span>Italian</span></label>
+                  <label class="check opt"><input type="checkbox" name="cuisine"><span class="check-box" aria-hidden="true"></span><span>Mexican</span></label>
+                  <label class="check opt"><input type="checkbox" name="cuisine"><span class="check-box" aria-hidden="true"></span><span>Asian</span></label>
+                  <label class="check opt"><input type="checkbox" name="cuisine"><span class="check-box" aria-hidden="true"></span><span>Continental</span></label>
+                  <label class="check opt"><input type="checkbox" name="cuisine"><span class="check-box" aria-hidden="true"></span><span>Other</span></label>
+                </div>
+                <p class="err" data-ok="">Choose at least one cuisine — creators filter on it.</p>
+              </div>
+            </div>
+
+            <div class="ob-cols mt-6">
+              <div class="field">
+                <label class="label label-req" for="r-price">Price range</label>
+                <select class="select" id="r-price" name="price" required>
+                  <option value="">Select a price range</option>
+                  <option>Budget (₹)</option>
+                  <option>Mid-range (₹₹)</option>
+                  <option>Premium (₹₹₹)</option>
+                  <option>Fine dining (₹₹₹₹)</option>
+                </select>
+                <p class="err" data-ok="">Creators pitch ideas that match your price band.</p>
+              </div>
+              <div class="field">
+                <label class="label label-req" for="r-year">Year established</label>
+                <input class="input" id="r-year" name="year" type="number" min="1900" max="2026" step="1" required inputmode="numeric" placeholder="2016">
+                <p class="err" data-ok="">Enter a year between 1900 and 2026.</p>
+              </div>
+            </div>
+
+            <div class="ob-cols mt-6">
+              <div class="field">
+                <label class="label" for="r-seats">Seating capacity</label>
+                <input class="input" id="r-seats" name="seats" type="number" min="0" step="1" inputmode="numeric" placeholder="40">
+                <p class="hint">Optional. Helps creators judge shoot logistics.</p>
+              </div>
+              <div class="field">
+                <label class="label label-req" for="r-count">Number of branches</label>
+                <input class="input" id="r-count" name="branches" type="number" min="1" max="12" step="1" required
+                       inputmode="numeric" value="1" data-branch-count>
+                <p class="hint">You can add or remove branches on the next step.</p>
+              </div>
+            </div>
+
+            <div class="field mt-6">
+              <span class="label label-req">Restaurant logo</span>
+              <div class="upload">
+                <span class="well" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0 4 4m-4-4L8 8"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+                </span>
+                <span class="upload-t">
+                  <span class="ob-side-t">Upload a logo</span>
+                  <span class="ob-side-s">PNG or JPG, at least 512×512. Checked on this device only in this prototype.</span>
+                </span>
+                <input type="file" id="r-logo" name="logo" accept=".png,.jpg,.jpeg,.svg" aria-label="Restaurant logo file">
+              </div>
+            </div>
+
+            <div class="ob-nav mt-6">
+              <button class="btn btn-ghost" type="button" data-step-back>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="transform:rotate(180deg)"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                Back
+              </button>
+              <button class="btn btn-primary" type="button" data-step-next>
+                Continue
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <!-- step 3 — branches -->
+        <section class="ob-card pane" data-pane>
+          <div>
+            <h2 class="ob-h">Locations</h2>
+            <p class="ob-p mt-6">Add every branch this account runs. Creators are matched to the branch
+              that can actually host the shoot, not just the city.</p>
+          </div>
+
+          <form data-form data-reset data-success="Branches saved." novalidate>
+            <div class="form-sum" data-form-summary role="alert"></div>
+
+            <div class="field">
+              <span class="label label-req">Your branches</span>
+              <p class="hint">One account, many branches. The first branch is always kept.</p>
+            </div>
+
+            <div class="branch-list mt-6" data-branch-list>
+              <div class="branch-card" data-branch="1">
+                <div class="branch-head">
+                  <span class="branch-title" data-branch-title>Branch 1</span>
+                  <button class="btn btn-quiet btn-sm" type="button" data-branch-remove hidden>Remove</button>
+                </div>
+                <div class="branch-grid">
+                  <div class="field">
+                    <label class="label label-req" for="br1-name">Branch name</label>
+                    <input class="input" id="br1-name" name="br1name" type="text" required placeholder="Sakura House — Bandra">
+                    <p class="err" data-ok="">Name the branch the way the team refers to it.</p>
+                  </div>
+                  <div class="field branch-span">
+                    <label class="label label-req" for="br1-address">Full address</label>
+                    <textarea class="textarea" id="br1-address" name="br1address" required placeholder="Street, area, landmark"></textarea>
+                    <p class="err" data-ok="">Creators check travel time from this address.</p>
+                  </div>
+                  <div class="field">
+                    <label class="label label-req" for="br1-city">City</label>
+                    <input class="input" id="br1-city" name="br1city" type="text" required autocomplete="address-level2" placeholder="Mumbai">
+                    <p class="err" data-ok="">Creators filter by city, so this must match your address.</p>
+                  </div>
+                  <div class="field">
+                    <label class="label label-req" for="br1-state">State</label>
+                    <input class="input" id="br1-state" name="br1state" type="text" required autocomplete="address-level1" placeholder="Maharashtra">
+                    <p class="err" data-ok="">Enter the state as it appears on the licence.</p>
+                  </div>
+                  <div class="field">
+                    <label class="label label-req" for="br1-pin">PIN code</label>
+                    <input class="input" id="br1-pin" name="br1pin" type="text" required inputmode="numeric"
+                           data-match="^[0-9]{6}$" placeholder="400050">
+                    <p class="err" data-ok="">Six digits, no spaces.</p>
+                  </div>
+                  <div class="field">
+                    <label class="label" for="br1-maps">Google Maps location</label>
+                    <input class="input" id="br1-maps" name="br1maps" type="url" placeholder="https://maps.app.goo.gl/…">
+                    <p class="hint">Paste the share link from Google Maps.</p>
+                  </div>
+                  <div class="field branch-span">
+                    <label class="label label-req" for="br1-hours">Operating hours</label>
+                    <input class="input" id="br1-hours" name="br1hours" type="text" required placeholder="11:00 AM – 11:00 PM">
+                    <p class="err" data-ok="">Writers plan shoots around your open hours.</p>
+                  </div>
+                  <div class="field branch-span">
+                    <span class="label">Availability</span>
+                    <div class="yn-row">
+                      <span class="yn-item">
+                        <span class="yn-l">Delivery</span>
+                        <span class="yn">
+                          <label class="yn-o"><input type="radio" name="br1-delivery" value="Yes" checked><span>Yes</span></label>
+                          <label class="yn-o"><input type="radio" name="br1-delivery" value="No"><span>No</span></label>
+                        </span>
+                      </span>
+                      <span class="yn-item">
+                        <span class="yn-l">Dine-in</span>
+                        <span class="yn">
+                          <label class="yn-o"><input type="radio" name="br1-dinein" value="Yes" checked><span>Yes</span></label>
+                          <label class="yn-o"><input type="radio" name="br1-dinein" value="No"><span>No</span></label>
+                        </span>
+                      </span>
+                      <span class="yn-item">
+                        <span class="yn-l">Takeaway</span>
+                        <span class="yn">
+                          <label class="yn-o"><input type="radio" name="br1-takeaway" value="Yes" checked><span>Yes</span></label>
+                          <label class="yn-o"><input type="radio" name="br1-takeaway" value="No"><span>No</span></label>
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="row-wrap mt-6">
+              <button class="btn btn-ghost" type="button" data-branch-add>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                Add another branch
+              </button>
+              <span class="hint" data-branch-live role="status" aria-live="polite">1 branch on this account.</span>
+            </div>
+
+            <div class="ob-nav mt-6">
+              <button class="btn btn-ghost" type="button" data-step-back>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="transform:rotate(180deg)"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                Back
+              </button>
+              <button class="btn btn-primary" type="button" data-step-next>
+                Continue
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <!-- step 4 — social media -->
+        <section class="ob-card pane" data-pane>
+          <div>
+            <h2 class="ob-h">Social media</h2>
+            <p class="ob-p mt-6">Links are shown on your profile so creators can judge your style and reach.
+              Paste what you have — you can add the rest later.</p>
+          </div>
+
+          <form data-form data-reset data-success="Social links saved." novalidate>
+            <div class="form-sum" data-form-summary role="alert"></div>
+
+            <div class="field">
+              <span class="label label-req">Instagram</span>
+              <div class="ig-row">
+                <input class="input" id="s-ig" name="sig" type="url" data-ig-input required
+                       placeholder="https://www.instagram.com/yourrestaurant/">
+                <button class="btn btn-ghost" type="button" data-connect-ig aria-pressed="false">Connect Instagram</button>
+              </div>
+              <p class="err" data-ok="">Paste a full link, or connect Instagram to fill it in.</p>
+              <p class="hint">Prototype only — connecting fills the field. No sign-in is asked for.</p>
+            </div>
+
+            <div class="ob-cols mt-6">
+              <div class="field">
+                <label class="label" for="s-fb">Facebook</label>
+                <input class="input" id="s-fb" name="sfb" type="url" placeholder="https://facebook.com/yourrestaurant">
+              </div>
+              <div class="field">
+                <label class="label" for="s-yt">YouTube</label>
+                <input class="input" id="s-yt" name="syt" type="url" placeholder="https://youtube.com/@yourrestaurant">
+              </div>
+            </div>
+
+            <div class="ob-cols mt-6">
+              <div class="field">
+                <label class="label" for="s-web">Website</label>
+                <input class="input" id="s-web" name="sweb" type="url" placeholder="https://yourrestaurant.com">
+              </div>
+              <div class="field">
+                <label class="label" for="s-gbp">Google Business Profile</label>
+                <input class="input" id="s-gbp" name="sgbp" type="url" placeholder="https://maps.google.com/…">
+              </div>
+            </div>
+
+            <div class="ob-nav mt-6">
+              <button class="btn btn-ghost" type="button" data-step-back>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="transform:rotate(180deg)"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                Back
+              </button>
+              <button class="btn btn-primary" type="button" data-step-next>
+                Continue
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <!-- step 5 — campaign objectives -->
+        <section class="ob-card pane" data-pane>
+          <div>
+            <h2 class="ob-h">Campaign objectives</h2>
+            <p class="ob-p mt-6">What should your campaigns achieve? Pick everything you plan to run —
+              we match creators whose audience already responds to this.</p>
+          </div>
+
+          <form data-form data-reset data-success="Objectives saved." novalidate>
+            <div class="form-sum" data-form-summary role="alert"></div>
+
+            <div class="field" data-req-group id="g-obj">
+              <span class="label label-req">Campaign objectives</span>
+              <div class="opt-grid" role="group" aria-label="Campaign objectives">
+                <label class="check opt"><input type="checkbox" name="obj"><span class="check-box" aria-hidden="true"></span><span>Brand Awareness</span></label>
+                <label class="check opt"><input type="checkbox" name="obj"><span class="check-box" aria-hidden="true"></span><span>New Restaurant Launch</span></label>
+                <label class="check opt"><input type="checkbox" name="obj"><span class="check-box" aria-hidden="true"></span><span>New Menu Launch</span></label>
+                <label class="check opt"><input type="checkbox" name="obj"><span class="check-box" aria-hidden="true"></span><span>Food Photography</span></label>
+                <label class="check opt"><input type="checkbox" name="obj"><span class="check-box" aria-hidden="true"></span><span>Reels/Videos</span></label>
+                <label class="check opt"><input type="checkbox" name="obj"><span class="check-box" aria-hidden="true"></span><span>Influencer Visit</span></label>
+                <label class="check opt"><input type="checkbox" name="obj"><span class="check-box" aria-hidden="true"></span><span>Festival Promotion</span></label>
+                <label class="check opt"><input type="checkbox" name="obj"><span class="check-box" aria-hidden="true"></span><span>Offers &amp; Discounts</span></label>
+                <label class="check opt"><input type="checkbox" name="obj"><span class="check-box" aria-hidden="true"></span><span>UGC Content</span></label>
+                <label class="check opt"><input type="checkbox" name="obj"><span class="check-box" aria-hidden="true"></span><span>Reviews</span></label>
+                <label class="check opt"><input type="checkbox" name="obj"><span class="check-box" aria-hidden="true"></span><span>Delivery Promotion</span></label>
+              </div>
+              <p class="err" data-ok="">Pick at least one objective — it drives creator matching.</p>
+            </div>
+
+            <div class="ob-nav mt-6">
+              <button class="btn btn-ghost" type="button" data-step-back>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="transform:rotate(180deg)"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                Back
+              </button>
+              <button class="btn btn-primary" type="button" data-step-next>
+                Continue
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <!-- step 6 — creator preferences -->
+        <section class="ob-card pane" data-pane>
+          <div>
+            <h2 class="ob-h">Creator preferences</h2>
+            <p class="ob-p mt-6">Tell us who fits the brand. These set the defaults on every search
+              and on the applications you see first.</p>
+          </div>
+
+          <form data-form data-reset data-success="Creator preferences saved." novalidate>
+            <div class="form-sum" data-form-summary role="alert"></div>
+
+            <div class="field" data-req-group id="g-cat">
+              <span class="label label-req">Creator category</span>
+              <div class="opt-grid" role="group" aria-label="Creator category">
+                <label class="check opt"><input type="checkbox" name="cat"><span class="check-box" aria-hidden="true"></span><span>Food blogger</span></label>
+                <label class="check opt"><input type="checkbox" name="cat"><span class="check-box" aria-hidden="true"></span><span>Food influencer</span></label>
+                <label class="check opt"><input type="checkbox" name="cat"><span class="check-box" aria-hidden="true"></span><span>Lifestyle</span></label>
+                <label class="check opt"><input type="checkbox" name="cat"><span class="check-box" aria-hidden="true"></span><span>Travel</span></label>
+                <label class="check opt"><input type="checkbox" name="cat"><span class="check-box" aria-hidden="true"></span><span>Local influencer</span></label>
+                <label class="check opt"><input type="checkbox" name="cat"><span class="check-box" aria-hidden="true"></span><span>Couple</span></label>
+                <label class="check opt"><input type="checkbox" name="cat"><span class="check-box" aria-hidden="true"></span><span>Family</span></label>
+                <label class="check opt"><input type="checkbox" name="cat"><span class="check-box" aria-hidden="true"></span><span>Fitness</span></label>
+                <label class="check opt"><input type="checkbox" name="cat"><span class="check-box" aria-hidden="true"></span><span>Student</span></label>
+                <label class="check opt"><input type="checkbox" name="cat"><span class="check-box" aria-hidden="true"></span><span>Celebrity/Macro influencer</span></label>
+              </div>
+              <p class="err" data-ok="">Choose at least one category of creator.</p>
+            </div>
+
+            <div class="ob-sec">
+              <div class="field" data-req-group id="g-aud">
+                <span class="label label-req">Audience size</span>
+                <div class="opt-grid" role="radiogroup" aria-label="Audience size">
+                  <label class="check opt check-radio"><input type="radio" name="aud" value="nano"><span class="check-box" aria-hidden="true"></span><span>Nano 1K–10K</span></label>
+                  <label class="check opt check-radio"><input type="radio" name="aud" value="micro"><span class="check-box" aria-hidden="true"></span><span>Micro 10K–50K</span></label>
+                  <label class="check opt check-radio"><input type="radio" name="aud" value="mid"><span class="check-box" aria-hidden="true"></span><span>Mid-tier 50K–250K</span></label>
+                  <label class="check opt check-radio"><input type="radio" name="aud" value="macro"><span class="check-box" aria-hidden="true"></span><span>Macro 250K+</span></label>
+                </div>
+                <p class="err" data-ok="">Pick the audience size you want to work with.</p>
+              </div>
+            </div>
+
+            <div class="ob-sec">
+              <div class="field" data-req-group id="g-loc">
+                <span class="label label-req">Preferred location</span>
+                <div class="opt-grid" role="radiogroup" aria-label="Preferred location">
+                  <label class="check opt check-radio"><input type="radio" name="loc" value="5"><span class="check-box" aria-hidden="true"></span><span>Within 5 km</span></label>
+                  <label class="check opt check-radio"><input type="radio" name="loc" value="10"><span class="check-box" aria-hidden="true"></span><span>Within 10 km</span></label>
+                  <label class="check opt check-radio"><input type="radio" name="loc" value="25"><span class="check-box" aria-hidden="true"></span><span>Within 25 km</span></label>
+                  <label class="check opt check-radio"><input type="radio" name="loc" value="city"><span class="check-box" aria-hidden="true"></span><span>Anywhere in city</span></label>
+                  <label class="check opt check-radio"><input type="radio" name="loc" value="multi"><span class="check-box" aria-hidden="true"></span><span>Multiple cities</span></label>
+                </div>
+                <p class="err" data-ok="">Choose how far you want creators to travel.</p>
+              </div>
+            </div>
+
+            <div class="ob-nav mt-6">
+              <button class="btn btn-ghost" type="button" data-step-back>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="transform:rotate(180deg)"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                Back
+              </button>
+              <button class="btn btn-primary" type="button" data-step-next>
+                Continue
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <!-- step 7 — campaign budget -->
+        <section class="ob-card pane" data-pane>
+          <div>
+            <h2 class="ob-h">Campaign budget</h2>
+            <p class="ob-p mt-6">The band is public on every campaign you post. Creators filter by it,
+              so a realistic band brings better-fit applications and fewer mismatches.</p>
+          </div>
+
+          <form data-form data-reset data-success="Budget band saved." novalidate>
+            <div class="form-sum" data-form-summary role="alert"></div>
+
+            <div class="field" data-req-group id="g-band">
+              <span class="label label-req">Budget per campaign</span>
+              <div class="opt-grid" role="radiogroup" aria-label="Budget per campaign">
+                <label class="check opt check-radio"><input type="radio" name="band" value="1"><span class="check-box" aria-hidden="true"></span><span>₹1,000–₹5,000</span></label>
+                <label class="check opt check-radio"><input type="radio" name="band" value="2"><span class="check-box" aria-hidden="true"></span><span>₹5,000–₹10,000</span></label>
+                <label class="check opt check-radio"><input type="radio" name="band" value="3"><span class="check-box" aria-hidden="true"></span><span>₹10,000–₹25,000</span></label>
+                <label class="check opt check-radio"><input type="radio" name="band" value="4"><span class="check-box" aria-hidden="true"></span><span>₹25,000–₹50,000</span></label>
+                <label class="check opt check-radio"><input type="radio" name="band" value="5"><span class="check-box" aria-hidden="true"></span><span>₹50,000+</span></label>
+              </div>
+              <p class="err" data-ok="">Choose the band you usually spend per campaign.</p>
+            </div>
+
+            <div class="ob-sec">
+              <div class="field" data-req-group id="g-pay">
+                <span class="label label-req">Payment mode</span>
+                <div class="opt-grid" role="group" aria-label="Payment mode">
+                  <label class="check opt"><input type="checkbox" name="pay"><span class="check-box" aria-hidden="true"></span><span>Cash + Complimentary Food</span></label>
+                  <label class="check opt"><input type="checkbox" name="pay"><span class="check-box" aria-hidden="true"></span><span>Cash + Product/Meal</span></label>
+                  <label class="check opt"><input type="checkbox" name="pay"><span class="check-box" aria-hidden="true"></span><span>Barter only</span></label>
+                </div>
+                <p class="err" data-ok="">Select at least one way you pay creators.</p>
+                <p class="hint">Fees, taxes, and travel are agreed in the deal room before escrow.</p>
+              </div>
+            </div>
+
+            <div class="hair hair-2 mt-6">
+              <div>
+                <span class="amt-k">Typical band in this prototype</span>
+                <span class="amount amount-gold od-nowrap">₹10K–₹25K</span>
+              </div>
+              <div>
+                <span class="amt-k">Platform fee at ₹20,000 escrow</span>
+                <span class="amount od-nowrap">₹2,000</span>
+              </div>
+            </div>
+
+            <div class="ob-nav mt-6">
+              <button class="btn btn-ghost" type="button" data-step-back>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="transform:rotate(180deg)"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                Back
+              </button>
+              <button class="btn btn-primary" type="button" data-step-next>
+                Continue
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <!-- step 8 — verification -->
+        <section class="ob-card pane" data-pane>
+          <div>
+            <h2 class="ob-h">Verification</h2>
+            <p class="ob-p mt-6">Verified restaurants appear first in creator searches and can fund escrow.
+              Documents stay private and are never shown to creators.</p>
+          </div>
+
+          <form data-form data-reset data-success="Documents submitted for review. Verification usually takes 1–2 business days." novalidate>
+            <div class="form-sum" data-form-summary role="alert"></div>
+
+            <div class="field">
+              <label class="label label-req" for="v-gst">Business registration / GST details</label>
+              <div class="upload">
+                <span class="well" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>
+                </span>
+                <span class="upload-t">
+                  <span class="ob-side-t">GST certificate or registration proof</span>
+                  <span class="ob-side-s">PDF or image. Private to CollabTable — creators only see a verified badge.</span>
+                </span>
+                <input type="file" id="v-gst" name="vgst" accept=".pdf,.png,.jpg,.jpeg" required aria-label="Business registration file">
+              </div>
+              <p class="err" data-ok="">Attach the registration document to start the review.</p>
+            </div>
+
+            <div class="field mt-6">
+              <label class="label label-req" for="v-pan">PAN</label>
+              <div class="upload">
+                <span class="well" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>
+                </span>
+                <span class="upload-t">
+                  <span class="ob-side-t">PAN card or business PAN</span>
+                  <span class="ob-side-s">The name must match your registration document.</span>
+                </span>
+                <input type="file" id="v-pan" name="vpan" accept=".pdf,.png,.jpg,.jpeg" required aria-label="PAN file">
+              </div>
+              <p class="err" data-ok="">Attach the PAN so we can match the business name.</p>
+            </div>
+
+            <div class="field mt-6">
+              <label class="label" for="v-lic">Business license (if applicable)</label>
+              <div class="upload">
+                <span class="well" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>
+                </span>
+                <span class="upload-t">
+                  <span class="ob-side-t">FSSAI, trade, or municipal licence</span>
+                  <span class="ob-side-s">Optional where your city does not require one.</span>
+                </span>
+                <input type="file" id="v-lic" name="vlic" accept=".pdf,.png,.jpg,.jpeg" aria-label="Business licence file">
+              </div>
+            </div>
+
+            <div class="field mt-6">
+              <label class="label label-req" for="v-own">Restaurant ownership proof</label>
+              <div class="upload">
+                <span class="well" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>
+                </span>
+                <span class="upload-t">
+                  <span class="ob-side-t">Lease, partnership deed, or registration in your name</span>
+                  <span class="ob-side-s">Proves you can authorise campaigns for this restaurant.</span>
+                </span>
+                <input type="file" id="v-own" name="vown" accept=".pdf,.png,.jpg,.jpeg" required aria-label="Ownership proof file">
+              </div>
+              <p class="err" data-ok="">Attach proof that you can approve spend for this restaurant.</p>
+            </div>
+
+            <div class="field mt-6">
+              <label class="label" for="v-branch">Branch verification</label>
+              <div class="upload">
+                <span class="well" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>
+                </span>
+                <span class="upload-t">
+                  <span class="ob-side-t">Proof for each branch address</span>
+                  <span class="ob-side-s">Optional. A utility bill or signage photo speeds up multi-branch review.</span>
+                </span>
+                <input type="file" id="v-branch" name="vbranch" accept=".pdf,.png,.jpg,.jpeg" aria-label="Branch verification file">
+              </div>
+            </div>
+
+            <div class="field mt-6">
+              <label class="label" for="v-contact">Contact verification</label>
+              <div class="upload">
+                <span class="well" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>
+                </span>
+                <span class="upload-t">
+                  <span class="ob-side-t">Letterhead or business card for your work email</span>
+                  <span class="ob-side-s">Optional. Your email and phone are already OTP-checked.</span>
+                </span>
+                <input type="file" id="v-contact" name="vcontact" accept=".pdf,.png,.jpg,.jpeg" aria-label="Contact verification file">
+              </div>
+            </div>
+
+            <div class="field mt-6" data-req-group id="g-attest">
+              <span class="label label-req">Confirmation</span>
+              <label class="check">
+                <input type="checkbox" name="attest">
+                <span class="check-box" aria-hidden="true"></span>
+                <span>I confirm these documents belong to this restaurant and the details on them are current.</span>
+              </label>
+              <p class="err" data-ok="">Please confirm before submitting for review.</p>
+            </div>
+
+            <div class="ob-nav mt-6">
+              <button class="btn btn-ghost" type="button" data-step-back>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="transform:rotate(180deg)"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                Back
+              </button>
+              <div class="row-wrap">
+                <a class="btn btn-quiet" href="restaurant-dashboard.html">Skip to dashboard</a>
+                <button class="btn btn-primary" type="submit">Submit for verification</button>
+              </div>
+            </div>
+          </form>
+        </section>
+      </div>
+
+      <!-- ---------------------------------------------------- side panel -->
+      <aside class="stack stack-4" aria-label="What happens next">
+        <div class="panel">
+          <span class="eyebrow">After onboarding</span>
+          <div class="list-row" style="border:0;padding-block:var(--s3)">
+            <span class="avatar avatar-sm">1</span>
+            <span class="list-main">
+              <span class="list-t">Browse creators</span>
+              <span class="list-s">Filter by cuisine, city, and rate.</span>
+            </span>
+          </div>
+          <div class="list-row" style="padding-block:var(--s3)">
+            <span class="avatar avatar-sm">2</span>
+            <span class="list-main">
+              <span class="list-t">Review applications</span>
+              <span class="list-s">Shortlist the creators whose fit is right.</span>
+            </span>
+          </div>
+          <div class="list-row" style="padding-block:var(--s3)">
+            <span class="avatar avatar-sm">3</span>
+            <span class="list-main">
+              <span class="list-t">Negotiate in the deal room</span>
+              <span class="list-s">Offer, counter-offer, then contract.</span>
+            </span>
+          </div>
+          <div class="list-row" style="border-bottom:0;padding-block:var(--s3)">
+            <span class="avatar avatar-sm">4</span>
+            <span class="list-main">
+              <span class="list-t">Fund escrow and approve</span>
+              <span class="list-s">Payment releases on approval.</span>
+            </span>
+          </div>
+          <a class="btn btn-ghost btn-block mt-6" href="restaurant-dashboard.html">See the restaurant dashboard</a>
+        </div>
+
+        <div class="panel">
+          <div class="lockbar">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10.5" width="16" height="10" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg>
+            <span>Your phone and email stay masked from creators until a deal is accepted.</span>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer-btm">
+      <span>CollabTable prototype — restaurant signup.</span>
+      <span>All amounts in Indian rupees (₹).</span>
+    </div>
+  </div>
+</footer>
+
+<template id="branch-tpl">
+  <div class="branch-card" data-branch="0">
+    <div class="branch-head">
+      <span class="branch-title" data-branch-title>Branch</span>
+      <button class="btn btn-quiet btn-sm" type="button" data-branch-remove>Remove</button>
+    </div>
+    <div class="branch-grid">
+      <div class="field">
+        <label class="label label-req" data-b-for="name">Branch name</label>
+        <input class="input" data-b="name" type="text" required placeholder="Sakura House — Andheri">
+        <p class="err" data-ok="">Name the branch the way the team refers to it.</p>
+      </div>
+      <div class="field branch-span">
+        <label class="label label-req" data-b-for="address">Full address</label>
+        <textarea class="textarea" data-b="address" required placeholder="Street, area, landmark"></textarea>
+        <p class="err" data-ok="">Creators check travel time from this address.</p>
+      </div>
+      <div class="field">
+        <label class="label label-req" data-b-for="city">City</label>
+        <input class="input" data-b="city" type="text" required placeholder="Mumbai">
+        <p class="err" data-ok="">Creators filter by city, so this must match your address.</p>
+      </div>
+      <div class="field">
+        <label class="label label-req" data-b-for="state">State</label>
+        <input class="input" data-b="state" type="text" required placeholder="Maharashtra">
+        <p class="err" data-ok="">Enter the state as it appears on the licence.</p>
+      </div>
+      <div class="field">
+        <label class="label label-req" data-b-for="pin">PIN code</label>
+        <input class="input" data-b="pin" type="text" required inputmode="numeric" data-match="^[0-9]{6}$" placeholder="400050">
+        <p class="err" data-ok="">Six digits, no spaces.</p>
+      </div>
+      <div class="field">
+        <label class="label" data-b-for="maps">Google Maps location</label>
+        <input class="input" data-b="maps" type="url" placeholder="https://maps.app.goo.gl/…">
+        <p class="hint">Paste the share link from Google Maps.</p>
+      </div>
+      <div class="field branch-span">
+        <label class="label label-req" data-b-for="hours">Operating hours</label>
+        <input class="input" data-b="hours" type="text" required placeholder="11:00 AM – 11:00 PM">
+        <p class="err" data-ok="">Writers plan shoots around your open hours.</p>
+      </div>
+      <div class="field branch-span">
+        <span class="label">Availability</span>
+        <div class="yn-row">
+          <span class="yn-item">
+            <span class="yn-l">Delivery</span>
+            <span class="yn">
+              <label class="yn-o"><input type="radio" data-b-name="delivery" value="Yes" checked><span>Yes</span></label>
+              <label class="yn-o"><input type="radio" data-b-name="delivery" value="No"><span>No</span></label>
+            </span>
+          </span>
+          <span class="yn-item">
+            <span class="yn-l">Dine-in</span>
+            <span class="yn">
+              <label class="yn-o"><input type="radio" data-b-name="dinein" value="Yes" checked><span>Yes</span></label>
+              <label class="yn-o"><input type="radio" data-b-name="dinein" value="No"><span>No</span></label>
+            </span>
+          </span>
+          <span class="yn-item">
+            <span class="yn-l">Takeaway</span>
+            <span class="yn">
+              <label class="yn-o"><input type="radio" data-b-name="takeaway" value="Yes" checked><span>Yes</span></label>
+              <label class="yn-o"><input type="radio" data-b-name="takeaway" value="No"><span>No</span></label>
+            </span>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<div class="scrim" data-scrim></div>
+<script src="assets/app.js"></script>
+</body>
+</html>

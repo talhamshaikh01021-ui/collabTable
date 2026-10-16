@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Restaurant dashboard — CollabTable</title>
+<meta name="description" content="Restaurant dashboard: every live campaign with the applications it received, budget committed, and escrow per campaign.">
+<meta name="theme-color" content="#FE002A">
+<style>
+/* OD-LAYOUT-PRIMITIVES v1 — structure only: display, flex/grid, overflow, wrapping, ratio.
+   Put this @layer first; product CSS outside the layer always wins. */
+@layer od-layout {
+  :where(.od-stack,.od-row,.od-row-top,.od-cluster,.od-grid,.od-field,.od-stat,.od-cell,.od-tile) > :where(*) { min-width: 0; }
+
+  /* containers */
+  .od-stack   { display: flex; flex-direction: column; gap: var(--od-gap, 8px); }
+  .od-row     { display: flex; align-items: center; gap: var(--od-gap, 8px); }
+  .od-row-top { display: flex; align-items: flex-start; gap: var(--od-gap, 8px); }
+  .od-cluster { display: flex; flex-wrap: wrap; align-items: center; gap: var(--od-gap, 8px); }
+  .od-fill    { flex: 1 1 0; min-width: 0; }
+  .od-fixed   { flex: none; }
+  .od-grid    { display: grid; gap: var(--od-gap, 12px); grid-template-columns: repeat(var(--od-cols, 3), minmax(0, 1fr)); }
+
+  /* stacked information: each piece is its own line — never sibling inline spans */
+  .od-stat, .od-field, .od-cell { display: grid; gap: var(--od-gap, 2px); }
+  :where(.od-stat,.od-field,.od-cell) > :where(*) { display: block; }
+  .od-tile { display: grid; grid-template-rows: auto 1fr; }
+  :where(.od-tile) > :where(*) { display: block; }
+
+  /* media keeps its intrinsic ratio by default; never a distorted or cropped
+     cover by accident. height:auto lets the ratio win over an <img height="…">
+     attribute. Cropping to a uniform box is an explicit opt-in: set --od-ratio
+     AND add .od-media-cover together (per the core rule, only where a crop is
+     deliberate — tile thumbs, decorative fills — never on full-frame content). */
+  .od-media { display: block; width: 100%; height: auto; aspect-ratio: var(--od-ratio, auto); }
+  .od-media-cover { object-fit: cover; }
+
+  /* data text only — authored copy is rewritten to its budget instead */
+  .od-truncate { display: block; max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .od-clamp-2, .od-clamp-3 { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+  .od-clamp-2 { -webkit-line-clamp: 2; }
+  .od-clamp-3 { -webkit-line-clamp: 3; }
+  .od-lines-2 { min-height: calc(2 * 1.4em); }   /* block-level reservation for a shared baseline */
+  .od-nowrap  { white-space: nowrap; }           /* 数字+单位 · 价格+起 · 日期+星期 */
+  .od-keep    { word-break: keep-all; overflow-wrap: anywhere; } /* CJK labels break at spaces / <wbr> first */
+
+  /* screen skeleton (optional): bars take their own space, the middle scrolls — no padding guessed for chrome */
+  .od-screen { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; height: 100%; }
+  .od-scroll { overflow-y: auto; overscroll-behavior: contain; min-height: 0; }
+
+  /* horizontal rail: the next item peeks at the edge; trailing room survives overflow */
+  .od-rail { display: flex; gap: var(--od-gap, 8px); overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none;
+             padding-inline: var(--od-rail-pad, 16px); scroll-padding-inline: var(--od-rail-pad, 16px); }
+  .od-rail::-webkit-scrollbar { display: none; }
+  :where(.od-rail) > :where(*) { flex: none; scroll-snap-align: start; }
+  :where(.od-rail) > :where(:last-child) { margin-inline-end: var(--od-rail-pad, 16px); }
+
+  .od-spacer { flex: none; visibility: hidden; pointer-events: none; }
+  .od-touch  { min-width: 44px; min-height: 44px; }
+}
+/* /OD-LAYOUT-PRIMITIVES v1 */
+</style>
+<link rel="stylesheet" href="assets/theme.css">
+<style>
+  .dash { display: grid; gap: var(--s6); padding-top: var(--s7); padding-bottom: var(--s9); }
+  .dash-main { display: grid; gap: var(--s6); }
+  .topbar { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--s4); }
+  .cam-card { display: grid; grid-template-columns: 1fr; gap: var(--s4); padding: var(--s5); background: var(--surface); border: 1px solid var(--line-10); border-radius: var(--r-lg); }
+  .cam-live { border-color: var(--primary-40); }
+  .cam-t { display: block; font-size: var(--f-2xl); font-weight: 500; color: var(--fg); }
+  .cam-s { display: block; margin-top: var(--s2); font-size: var(--f-sm); color: var(--muted-fg); }
+  .cam-meta { display: flex; flex-wrap: wrap; gap: var(--s4) var(--s5); margin-top: var(--s4); }
+  .cam-mt { display: grid; gap: var(--s1); }
+  .cam-mk { display: block; font-size: var(--f-xs); color: var(--muted-fg); }
+  .cam-mv { display: block; font-size: var(--f-sm); color: var(--fg); }
+  .cam-acts { display: flex; flex-wrap: wrap; gap: var(--s2); margin-top: var(--s5); }
+  .appl { display: grid; gap: var(--s3); padding: var(--s4) 0; border-bottom: 1px solid var(--line-05); }
+  .appl:last-child { border-bottom: 0; }
+  .appl-top { display: flex; align-items: center; gap: var(--s3); }
+  .appl-t { display: block; color: var(--fg); font-weight: 500; }
+  .appl-s { display: block; margin-top: 2px; font-size: var(--f-xs); color: var(--muted-fg); }
+  .appl-rate { margin-left: auto; text-align: right; }
+  .appl-rv { display: block; color: var(--fg); font-weight: 500; }
+  .appl-acts { display: flex; flex-wrap: wrap; gap: var(--s2); }
+  .side-stack { display: grid; gap: var(--s4); align-content: start; }
+  .esc-row { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s3); padding-block: var(--s3); border-bottom: 1px solid var(--line-05); }
+  .esc-row:last-child { border-bottom: 0; }
+  .esc-k { display: block; font-size: var(--f-xs); color: var(--muted-fg); }
+  .esc-v { display: block; font-size: var(--f-sm); color: var(--fg); }
+  .esc-cam { margin-top: var(--s4); padding-top: var(--s4); border-top: 1px solid var(--line-05); }
+  .esc-cam-t { display: block; margin-bottom: var(--s1); font-size: var(--f-sm); font-weight: 500; color: var(--fg); }
+  .todo { display: flex; align-items: flex-start; gap: var(--s3); padding-block: var(--s3); }
+  .todo-t { display: block; color: var(--fg); font-weight: 500; }
+  .todo-s { display: block; margin-top: 2px; font-size: var(--f-xs); color: var(--muted-fg); }
+
+  /* ---- several campaigns at once -------------------------------------- */
+  .cam-stack { display: grid; gap: var(--s4); }
+  /* the scope rail is the spine: pick one campaign, or read them all */
+  .crail { --od-gap: var(--s2); --od-rail-pad: 0; margin-top: var(--s5); }
+  .crail .chip { white-space: nowrap; }
+  /* applications nest under their campaign, so attribution is structural
+     rather than something the reader has to remember */
+  .cgroup { display: grid; gap: var(--s2); margin-top: var(--s5); padding-top: var(--s4); border-top: 1px solid var(--line-05); }
+  .cgroup-h { display: grid; gap: var(--s2); }
+  .cgroup-top { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s2) var(--s3); }
+  .cgroup-t { display: block; font-size: var(--f-2xl); font-weight: 500; color: var(--fg); }
+  .cgroup-n { margin-left: auto; font-size: var(--f-xs); color: var(--muted-fg); white-space: nowrap; }
+  .cgroup-meta { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s5); }
+  .cgroup-mt { display: grid; gap: 1px; }
+  .cgroup-mk { display: block; font-size: var(--f-xs); color: var(--muted-fg); }
+  .cgroup-mv { display: block; font-size: var(--f-sm); color: var(--fg); }
+  .cgroup-as { display: grid; margin-top: var(--s2); padding-left: var(--s4); border-left: 2px solid var(--line-10); }
+  .cbadge { display: inline-block; max-width: 100%; padding: 2px var(--s3); border: 1px solid var(--line-15); border-radius: var(--r-pill); font-size: var(--f-xs); color: var(--fg-2); }
+  .appl-ctx { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s3); }
+  .appl-age { display: block; font-size: var(--f-xs); color: var(--muted-fg); }
+  .appl-age.is-new { color: var(--gold-lt); }
+  .appl-also { display: block; font-size: var(--f-xs); color: var(--muted-fg); }
+  .cempty { display: grid; gap: var(--s2); margin-top: var(--s5); padding: var(--s6) var(--s5); border: 1px dashed var(--line-15); border-radius: var(--r-lg); text-align: center; }
+  .appl-sheet [hidden] { display: none !important; }
+  @media (max-width: 520px) {
+    .appl-top { flex-wrap: wrap; }
+    .appl-rate { width: 100%; margin-left: 0; text-align: left; }
+    .cgroup-as { padding-left: var(--s3); }
+  }
+  @media (min-width: 1024px) { .cam-card { grid-template-columns: minmax(0, 1fr) 220px; align-items: start; } }
+  @media (min-width: 1200px) { .dash { grid-template-columns: minmax(0, 1fr) 340px; align-items: start; } }
+</style>
+</head>
+<body>
+<div class="bloom" aria-hidden="true"></div>
+
+<header class="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="index.html" aria-label="CollabTable home">
+      <span class="brand-a">COLLAB</span><span class="brand-b">TABLE</span>
+    </a>
+    <nav class="nav-links" aria-label="Primary">
+      <a class="nav-link" href="landing.html">Overview</a>
+      <a class="nav-link" href="discover-creators.html" aria-current="page">For restaurants</a>
+      <a class="nav-link" href="discover-restaurants.html">For creators</a>
+    </nav>
+    <div class="nav-actions">
+      <a class="btn btn-quiet" href="index.html">All screens</a>
+      <a class="btn btn-primary" href="restaurant-onboarding.html">Post a campaign</a>
+      <button class="burger" type="button" data-burger aria-expanded="false" aria-controls="mnav" aria-label="Open menu">
+        <span></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="mnav" id="mnav" data-mnav aria-hidden="true">
+  <a class="mnav-link" href="index.html">All screens</a>
+  <a class="mnav-link" href="landing.html">Overview</a>
+  <a class="mnav-link" href="restaurant-dashboard.html" aria-current="page">Restaurant dashboard</a>
+  <a class="mnav-link" href="restaurant-onboarding.html">Restaurant onboarding</a>
+  <a class="mnav-link" href="discover-creators.html">Discover creators</a>
+  <a class="mnav-link" href="campaign-detail.html">Campaign detail</a>
+</div>
+
+<main class="page">
+  <div class="wrap">
+    <div class="dash">
+
+      <!-- ------------------------------------------------ main column -->
+      <div class="dash-main">
+
+        <div class="topbar">
+          <div>
+            <span class="eyebrow eyebrow-red">Sakura House · Mumbai</span>
+            <h1 class="h2">Restaurant dashboard</h1>
+            <p class="lede mt-6">Three campaigns are live. Nine applications are waiting, grouped by the campaign each one came for.</p>
+          </div>
+          <div class="row-wrap">
+            <a class="btn btn-ghost" href="discover-creators.html">Browse creators</a>
+            <a class="btn btn-primary" href="restaurant-onboarding.html">Post a campaign</a>
+          </div>
+        </div>
+
+        <div class="hair hair-4">
+          <div>
+            <span class="stat-n">3</span>
+            <span class="stat-c">Live campaigns</span>
+          </div>
+          <div>
+            <span class="stat-n">9</span>
+            <span class="stat-c">Applications to review</span>
+          </div>
+          <div>
+            <span class="stat-n">2</span>
+            <span class="stat-c">Completed campaigns</span>
+          </div>
+          <div>
+            <span class="stat-n stat-n-red">₹20,000</span>
+            <span class="stat-c">In escrow · 1 of 3 funded</span>
+          </div>
+        </div>
+
+        <!-- deal rooms: one card per campaign thread, priced live -->
+        <section class="panel" aria-labelledby="rooms-t" data-deal-entries>
+          <div class="between" style="flex-wrap:wrap">
+            <div>
+              <span class="eyebrow">Deal rooms</span>
+              <h2 class="h3" id="rooms-t">Negotiations</h2>
+            </div>
+            <span class="tag tag-live">Live counters</span>
+          </div>
+
+          <div class="grid grid-3 mt-6">
+            <article class="card" data-deal-entry data-deal-card="weekend-japanese">
+              <span class="eyebrow">Japanese · Mumbai</span>
+              <h3 class="cam-t mt-6">Weekend Japanese Experience</h3>
+              <div class="cam-meta">
+                <span class="cam-mt">
+                  <span class="cam-mt-k">Latest counter</span>
+                  <span class="cam-mv od-nowrap" data-deal-card-price>₹20,000</span>
+                </span>
+                <span class="cam-mt">
+                  <span class="cam-mt-k">Stage</span>
+                  <span class="cam-mv">Negotiating</span>
+                </span>
+              </div>
+              <div class="cam-acts">
+                <button class="btn btn-primary btn-sm" type="button" data-sheet="deal-room"
+                        data-deal-link="weekend-japanese">Open Deal Room</button>
+              </div>
+            </article>
+
+            <article class="card" data-deal-entry data-deal-card="monsoon-menu">
+              <span class="eyebrow">Monsoon · Mumbai</span>
+              <h3 class="cam-t mt-6">Monsoon Menu Launch</h3>
+              <div class="cam-meta">
+                <span class="cam-mt">
+                  <span class="cam-mt-k">Latest counter</span>
+                  <span class="cam-mv od-nowrap" data-deal-card-price>₹20,000</span>
+                </span>
+                <span class="cam-mt">
+                  <span class="cam-mt-k">Stage</span>
+                  <span class="cam-mv">Delivered</span>
+                </span>
+              </div>
+              <div class="cam-acts">
+                <button class="btn btn-primary btn-sm" type="button" data-sheet="deal-room"
+                        data-deal-link="monsoon-menu">Open Deal Room</button>
+              </div>
+            </article>
+
+            <article class="card" data-deal-entry data-deal-card="chefs-table">
+              <span class="eyebrow">Chef series · Mumbai</span>
+              <h3 class="cam-t mt-6">Chef's Table Series</h3>
+              <div class="cam-meta">
+                <span class="cam-mt">
+                  <span class="cam-mt-k">Latest counter</span>
+                  <span class="cam-mv od-nowrap" data-deal-card-price>₹20,000</span>
+                </span>
+                <span class="cam-mt">
+                  <span class="cam-mt-k">Stage</span>
+                  <span class="cam-mv">Delivered</span>
+                </span>
+              </div>
+              <div class="cam-acts">
+                <button class="btn btn-primary btn-sm" type="button" data-sheet="deal-room"
+                        data-deal-link="chefs-table">Open Deal Room</button>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <!-- live campaigns: a restaurant runs several at once -->
+        <section aria-labelledby="cams-t">
+          <div class="between" style="flex-wrap:wrap">
+            <div>
+              <span class="eyebrow">Live</span>
+              <h2 class="h3" id="cams-t">Campaigns</h2>
+            </div>
+            <span class="tag tag-live">3 running</span>
+          </div>
+
+          <div class="cam-stack mt-6">
+            <article class="card cam-card cam-live" aria-labelledby="cam1-t">
+              <div>
+                <div class="row-wrap">
+                  <span class="tag tag-live">Applications open</span>
+                  <span class="tag">Deadline: Sep 15</span>
+                  <span class="tag">Shoot 12–14 Sep</span>
+                </div>
+                <h3 class="cam-t mt-6" id="cam1-t">Weekend Japanese Experience</h3>
+                <p class="cam-s">Launch campaign for the new tasting menu. Reels and story set, shot across
+                  two weekend services.</p>
+
+                <div class="cam-meta">
+                  <span class="cam-mt">
+                    <span class="cam-mt-k">Budget range</span>
+                    <span class="cam-mv od-nowrap">₹20K–₹50K</span>
+                  </span>
+                  <span class="cam-mt">
+                    <span class="cam-mt-k">Cuisine</span>
+                    <span class="cam-mv">Japanese</span>
+                  </span>
+                  <span class="cam-mt">
+                    <span class="cam-mt-k">City</span>
+                    <span class="cam-mv">Mumbai</span>
+                  </span>
+                  <span class="cam-mt">
+                    <span class="cam-mt-k">Applications</span>
+                    <span class="cam-mv">3 waiting</span>
+                  </span>
+                  <span class="cam-mt">
+                    <span class="cam-mt-k">Deal status</span>
+                    <span class="cam-mv">Offer accepted · contract pending</span>
+                  </span>
+                </div>
+
+                <div class="cam-acts">
+                  <a class="btn btn-primary btn-sm" href="campaign-detail.html">Review applications</a>
+                  <button class="btn btn-ghost btn-sm" type="button" data-sheet="deal-room"
+                          data-appl-campaign="Weekend Japanese Experience"
+                          data-appl-scope="Mumbai · shoot 12–14 Sep · ₹20K–₹50K range"
+                          data-appl-meta="Creator Ananya · offer accepted, contract pending" data-deal-link="weekend-japanese">Deal Room</button>
+                </div>
+              </div>
+
+              <div>
+                <span class="amt-k">Budget committed</span>
+                <span class="amount od-nowrap">₹20,000</span>
+                <div class="meter mt-6">
+                  <span style="width:40%"></span>
+                </div>
+                <p class="hint mt-6">40% of the ₹50,000 ceiling, at the bottom of your published range.</p>
+                <div class="esc-row mt-6">
+                  <span class="esc-k">Escrow</span>
+                  <span class="esc-v od-nowrap">₹20,000</span>
+                </div>
+                <div class="esc-row">
+                  <span class="esc-k">Platform fee</span>
+                  <span class="esc-v od-nowrap">₹2,000</span>
+                </div>
+                <div class="esc-row">
+                  <span class="esc-k">Creator receives</span>
+                  <span class="esc-v od-nowrap">₹18,000</span>
+                </div>
+              </div>
+            </article>
+
+            <article class="card cam-card" aria-labelledby="cam2-t">
+              <div>
+                <div class="row-wrap">
+                  <span class="tag tag-live">Applications open</span>
+                  <span class="tag">Closing: Sep 18</span>
+                  <span class="tag">Shoot 20–21 Sep</span>
+                </div>
+                <h3 class="cam-t mt-6" id="cam2-t">Monsoon Brunch Launch</h3>
+                <p class="cam-s">Launch campaign for the monsoon brunch menu. A reel and a story set from the
+                  Sunday service.</p>
+
+                <div class="cam-meta">
+                  <span class="cam-mt">
+                    <span class="cam-mt-k">Budget range</span>
+                    <span class="cam-mv od-nowrap">₹8K–₹18K</span>
+                  </span>
+                  <span class="cam-mt">
+                    <span class="cam-mt-k">Cuisine</span>
+                    <span class="cam-mv">Indian</span>
+                  </span>
+                  <span class="cam-mt">
+                    <span class="cam-mt-k">City</span>
+                    <span class="cam-mv">Mumbai</span>
+                  </span>
+                  <span class="cam-mt">
+                    <span class="cam-mt-k">Applications</span>
+                    <span class="cam-mv">2 waiting</span>
+                  </span>
+                  <span class="cam-mt">
+                    <span class="cam-mt-k">Deal status</span>
+                    <span class="cam-mv">Applications open</span>
+                  </span>
+                </div>
+
+                <div class="cam-acts">
+                  <a class="btn btn-ghost btn-sm" href="campaign-detail.html">Review applications</a>
+                </div>
+              </div>
+
+              <div>
+                <span class="amt-k">Applications</span>
+                <span class="amount od-nowrap">2</span>
+                <div class="esc-row mt-6">
+                  <span class="esc-k">Newest</span>
+                  <span class="esc-v od-nowrap">2h ago</span>
+                </div>
+                <div class="esc-row">
+                  <span class="esc-k">Budget committed</span>
+                  <span class="esc-v od-nowrap">₹0</span>
+                </div>
+                <p class="hint mt-6">No offer accepted yet, so nothing from this campaign is in escrow.</p>
+              </div>
+            </article>
+
+            <article class="card cam-card" aria-labelledby="cam3-t">
+              <div>
+                <div class="row-wrap">
+                  <span class="tag tag-gold">New</span>
+                  <span class="tag tag-live">Applications open</span>
+                  <span class="tag">Deadline: Sep 22</span>
+                  <span class="tag">Shoot 3–4 Oct</span>
+                </div>
+                <h3 class="cam-t mt-6" id="cam3-t">Dessert Drop — Diwali</h3>
+                <p class="cam-s">Launch campaign for the Diwali dessert box. Two reels and a story set across
+                  both pre-order services.</p>
+
+                <div class="cam-meta">
+                  <span class="cam-mt">
+                    <span class="cam-mt-k">Budget range</span>
+                    <span class="cam-mv od-nowrap">₹15K–₹30K</span>
+                  </span>
+                  <span class="cam-mt">
+                    <span class="cam-mt-k">Cuisine</span>
+                    <span class="cam-mv">Desserts</span>
+                  </span>
+                  <span class="cam-mt">
+                    <span class="cam-mt-k">City</span>
+                    <span class="cam-mv">Mumbai</span>
+                  </span>
+                  <span class="cam-mt">
+                    <span class="cam-mt-k">Applications</span>
+                    <span class="cam-mv">4 waiting</span>
+                  </span>
+                  <span class="cam-mt">
+                    <span class="cam-mt-k">Deal status</span>
+                    <span class="cam-mv">Applications open</span>
+                  </span>
+                </div>
+
+                <div class="cam-acts">
+                  <a class="btn btn-ghost btn-sm" href="campaign-detail.html">Review applications</a>
+                </div>
+              </div>
+
+              <div>
+                <span class="amt-k">Applications</span>
+                <span class="amount od-nowrap">4</span>
+                <div class="esc-row mt-6">
+                  <span class="esc-k">Newest</span>
+                  <span class="esc-v od-nowrap">3h ago</span>
+                </div>
+                <div class="esc-row">
+                  <span class="esc-k">Budget committed</span>
+                  <span class="esc-v od-nowrap">₹0</span>
+                </div>
+                <p class="hint mt-6">No offer accepted yet, so nothing from this campaign is in escrow.</p>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <!-- applications: grouped by the campaign each one came for -->
+        <section class="panel" aria-labelledby="appl-t" data-filterable>
+          <div class="between" style="flex-wrap:wrap">
+            <div>
+              <span class="eyebrow">Inbox</span>
+              <h2 class="h3" id="appl-t">Applications</h2>
+            </div>
+            <span class="tag tag-red">9 to review</span>
+          </div>
+
+          <!-- the scope rail: read every campaign at once, or narrow to one -->
+          <div class="od-rail crail" data-chipgroup="single" role="group" aria-label="Show applications for one campaign">
+            <button class="chip" type="button" aria-pressed="true">All campaigns · 9</button>
+            <button class="chip" type="button" aria-pressed="false" data-tag="japanese">Weekend Japanese Experience · 3</button>
+            <button class="chip" type="button" aria-pressed="false" data-tag="monsoon">Monsoon Brunch Launch · 2</button>
+            <button class="chip" type="button" aria-pressed="false" data-tag="dessert">Dessert Drop — Diwali · 4</button>
+          </div>
+
+          <div class="cempty" data-empty hidden>
+            <span class="appl-t">No applications for that campaign</span>
+            <span class="appl-s">Pick another campaign above, or browse creators to invite more.</span>
+          </div>
+
+          <!-- Each group carries the campaign id the rail filters on. The id is
+               on the group only, never on the individual cards: one application
+               can sit under two campaigns, so the group is the single place
+               that says which campaign a row belongs to. -->
+          <!-- ------------------------------------------- japanese -->
+          <div class="cgroup" data-tags="japanese" data-campaign="Weekend Japanese Experience">
+            <div class="cgroup-h">
+              <div class="cgroup-top">
+                <h3 class="cgroup-t">Weekend Japanese Experience</h3>
+                <span class="cgroup-n">3 applications</span>
+              </div>
+              <div class="row-wrap">
+                <span class="tag tag-live">Applications open</span>
+                <span class="tag">Deadline: Sep 15</span>
+                <span class="tag">Shoot 12–14 Sep</span>
+              </div>
+              <div class="cgroup-meta">
+                <span class="cgroup-mt">
+                  <span class="cgroup-mk">Budget range</span>
+                  <span class="cgroup-mv od-nowrap">₹20K–₹50K</span>
+                </span>
+                <span class="cgroup-mt">
+                  <span class="cgroup-mk">Cuisine</span>
+                  <span class="cgroup-mv">Japanese</span>
+                </span>
+                <span class="cgroup-mt">
+                  <span class="cgroup-mk">City</span>
+                  <span class="cgroup-mv">Mumbai</span>
+                </span>
+              </div>
+            </div>
+
+            <div class="cgroup-as">
+              <article class="appl" data-appl
+                data-appl-name="Creator Ananya"
+                data-appl-campaign="Weekend Japanese Experience"
+                data-appl-scope="Mumbai · shoot 12–14 Sep · ₹20K–₹50K range"
+                data-appl-meta="Japanese · Mumbai · Reels and story set"
+                data-appl-rate="₹20,000"
+                data-appl-range="₹20K–₹50K"
+                data-appl-age="Offer accepted · 4h ago"
+                data-appl-note="Applied with a fixed scope: two reels and a story set, shot across the 12th and 13th. Available on both services.">
+                <div class="appl-top">
+                  <span class="avatar">A</span>
+                  <span style="min-width:0">
+                    <span class="appl-t">Creator Ananya</span>
+                    <span class="appl-s">Japanese · Mumbai · Reels and story set</span>
+                  </span>
+                  <span class="appl-rate">
+                    <span class="appl-rv od-nowrap">₹20,000</span>
+                    <span class="appl-s">Inside your range</span>
+                  </span>
+                </div>
+                <div class="appl-ctx">
+                  <span class="cbadge">Weekend Japanese Experience</span>
+                  <span class="appl-age">Offer accepted · 4h ago</span>
+                </div>
+                <p class="appl-s" style="margin:0">
+                  Applied with a fixed scope: two reels and a story set, shot across the 12th and 13th.
+                  Available on both services.
+                </p>
+                <div class="appl-acts">
+                  <button class="btn btn-primary btn-sm" type="button" data-sheet="appl-review">Review application</button>
+                  <button class="btn btn-ghost btn-sm" type="button" data-sheet="deal-room"
+                          data-appl-campaign="Weekend Japanese Experience"
+                          data-appl-scope="Mumbai · shoot 12–14 Sep · ₹20K–₹50K range"
+                          data-appl-meta="Creator Ananya · offer accepted, contract pending" data-deal-link="weekend-japanese">Deal Room</button>
+                  <button class="btn btn-quiet btn-sm" type="button" data-blocked-contact="Her contact details">View contact</button>
+                </div>
+              </article>
+
+              <article class="appl" data-appl
+                data-appl-name="Rahul V."
+                data-appl-campaign="Weekend Japanese Experience"
+                data-appl-scope="Mumbai · shoot 12–14 Sep · ₹20K–₹50K range"
+                data-appl-meta="Japanese · Mumbai · Reels and feed post"
+                data-appl-rate="₹32,000"
+                data-appl-range="₹20K–₹50K"
+                data-appl-age="Applied 1 day ago"
+                data-appl-also="Also applied to Dessert Drop — Diwali at ₹26,000"
+                data-appl-note="Proposed a reel, a feed post, and a menu shoot on the 14th. Wants to bundle a second campaign into the same visit.">
+                <div class="appl-top">
+                  <span class="avatar avatar-line">R</span>
+                  <span style="min-width:0">
+                    <span class="appl-t">Rahul V.</span>
+                    <span class="appl-s">Japanese · Mumbai · Reels and feed post</span>
+                  </span>
+                  <span class="appl-rate">
+                    <span class="appl-rv od-nowrap">₹32,000</span>
+                    <span class="appl-s">Inside your range</span>
+                  </span>
+                </div>
+                <div class="appl-ctx">
+                  <span class="cbadge">Weekend Japanese Experience</span>
+                  <span class="appl-age">Applied 1 day ago</span>
+                </div>
+                <span class="appl-also">Also applied to Dessert Drop — Diwali at ₹26,000</span>
+                <p class="appl-s" style="margin:0">
+                  Proposed a reel, a feed post, and a menu shoot on the 14th. Wants to bundle a second
+                  campaign into the same visit.
+                </p>
+                <div class="appl-acts">
+                  <button class="btn btn-ghost btn-sm" type="button" data-sheet="appl-review">Review application</button>
+                  <button class="btn btn-quiet btn-sm" type="button" data-blocked-contact="His contact details">View contact</button>
+                </div>
+              </article>
+
+              <article class="appl" data-appl
+                data-appl-name="Sana M."
+                data-appl-campaign="Weekend Japanese Experience"
+                data-appl-scope="Mumbai · shoot 12–14 Sep · ₹20K–₹50K range"
+                data-appl-meta="Desserts · Mumbai · Reels"
+                data-appl-rate="₹45,000"
+                data-appl-range="₹20K–₹50K"
+                data-appl-age="Applied 1 day ago"
+                data-appl-also="Also applied to Dessert Drop — Diwali at ₹28,000"
+                data-appl-note="Applied to cover the dessert menu separately from the tasting menu. Stronger fit if you split the brief into two campaigns.">
+                <div class="appl-top">
+                  <span class="avatar avatar-line">S</span>
+                  <span style="min-width:0">
+                    <span class="appl-t">Sana M.</span>
+                    <span class="appl-s">Desserts · Mumbai · Reels</span>
+                  </span>
+                  <span class="appl-rate">
+                    <span class="appl-rv od-nowrap">₹45,000</span>
+                    <span class="appl-s">Top of your range</span>
+                  </span>
+                </div>
+                <div class="appl-ctx">
+                  <span class="cbadge">Weekend Japanese Experience</span>
+                  <span class="appl-age">Applied 1 day ago</span>
+                </div>
+                <span class="appl-also">Also applied to Dessert Drop — Diwali at ₹28,000</span>
+                <p class="appl-s" style="margin:0">
+                  Applied to cover the dessert menu separately from the tasting menu. Stronger fit if you
+                  split the brief into two campaigns.
+                </p>
+                <div class="appl-acts">
+                  <button class="btn btn-ghost btn-sm" type="button" data-sheet="appl-review">Review application</button>
+                  <button class="btn btn-quiet btn-sm" type="button" data-blocked-contact="Her contact details">View contact</button>
+                </div>
+              </article>
+            </div>
+          </div>
+
+          <!-- -------------------------------------------- monsoon -->
+          <div class="cgroup" data-tags="monsoon" data-campaign="Monsoon Brunch Launch">
+            <div class="cgroup-h">
+              <div class="cgroup-top">
+                <h3 class="cgroup-t">Monsoon Brunch Launch</h3>
+                <span class="cgroup-n">2 applications</span>
+              </div>
+              <div class="row-wrap">
+                <span class="tag tag-live">Applications open</span>
+                <span class="tag">Closing: Sep 18</span>
+                <span class="tag">Shoot 20–21 Sep</span>
+              </div>
+              <div class="cgroup-meta">
+                <span class="cgroup-mt">
+                  <span class="cgroup-mk">Budget range</span>
+                  <span class="cgroup-mv od-nowrap">₹8K–₹18K</span>
+                </span>
+                <span class="cgroup-mt">
+                  <span class="cgroup-mk">Cuisine</span>
+                  <span class="cgroup-mv">Indian</span>
+                </span>
+                <span class="cgroup-mt">
+                  <span class="cgroup-mk">City</span>
+                  <span class="cgroup-mv">Mumbai</span>
+                </span>
+              </div>
+            </div>
+
+            <div class="cgroup-as">
+              <article class="appl" data-appl
+                data-appl-name="Priya N."
+                data-appl-campaign="Monsoon Brunch Launch"
+                data-appl-scope="Mumbai · shoot 20–21 Sep · ₹8K–₹18K range"
+                data-appl-meta="Indian · Mumbai · Reel and story set"
+                data-appl-rate="₹12,000"
+                data-appl-range="₹8K–₹18K"
+                data-appl-age="Applied 2h ago"
+                data-appl-note="Applied with a fixed scope: a reel and two story frames from the Sunday brunch service. Available from 7am.">
+                <div class="appl-top">
+                  <span class="avatar">P</span>
+                  <span style="min-width:0">
+                    <span class="appl-t">Priya N.</span>
+                    <span class="appl-s">Indian · Mumbai · Reel and story set</span>
+                  </span>
+                  <span class="appl-rate">
+                    <span class="appl-rv od-nowrap">₹12,000</span>
+                    <span class="appl-s">Inside your range</span>
+                  </span>
+                </div>
+                <div class="appl-ctx">
+                  <span class="cbadge">Monsoon Brunch Launch</span>
+                  <span class="appl-age is-new">New · applied 2h ago</span>
+                </div>
+                <p class="appl-s" style="margin:0">
+                  Applied with a fixed scope: a reel and two story frames from the Sunday brunch service.
+                  Available from 7am.
+                </p>
+                <div class="appl-acts">
+                  <button class="btn btn-ghost btn-sm" type="button" data-sheet="appl-review">Review application</button>
+                  <button class="btn btn-quiet btn-sm" type="button" data-blocked-contact="Her contact details">View contact</button>
+                </div>
+              </article>
+
+              <article class="appl" data-appl
+                data-appl-name="Devika R."
+                data-appl-campaign="Monsoon Brunch Launch"
+                data-appl-scope="Mumbai · shoot 20–21 Sep · ₹8K–₹18K range"
+                data-appl-meta="Indian · Mumbai · Reel and carousel"
+                data-appl-rate="₹16,500"
+                data-appl-range="₹8K–₹18K"
+                data-appl-age="Waiting 2 days"
+                data-appl-note="Proposed a reel plus a carousel, and asked whether the monsoon menu shoot could run on the same visit as the Japanese campaign.">
+                <div class="appl-top">
+                  <span class="avatar avatar-line">D</span>
+                  <span style="min-width:0">
+                    <span class="appl-t">Devika R.</span>
+                    <span class="appl-s">Indian · Mumbai · Reel and carousel</span>
+                  </span>
+                  <span class="appl-rate">
+                    <span class="appl-rv od-nowrap">₹16,500</span>
+                    <span class="appl-s">Inside your range</span>
+                  </span>
+                </div>
+                <div class="appl-ctx">
+                  <span class="cbadge">Monsoon Brunch Launch</span>
+                  <span class="appl-age">Waiting 2 days</span>
+                </div>
+                <p class="appl-s" style="margin:0">
+                  Proposed a reel plus a carousel, and asked whether the monsoon menu shoot could run on
+                  the same visit as the Japanese campaign.
+                </p>
+                <div class="appl-acts">
+                  <button class="btn btn-ghost btn-sm" type="button" data-sheet="appl-review">Review application</button>
+                  <button class="btn btn-quiet btn-sm" type="button" data-blocked-contact="Her contact details">View contact</button>
+                </div>
+              </article>
+            </div>
+          </div>
+
+          <!-- ------------------------------------------- dessert -->
+          <div class="cgroup" data-tags="dessert" data-campaign="Dessert Drop — Diwali">
+            <div class="cgroup-h">
+              <div class="cgroup-top">
+                <h3 class="cgroup-t">Dessert Drop — Diwali</h3>
+                <span class="cgroup-n">4 applications</span>
+              </div>
+              <div class="row-wrap">
+                <span class="tag tag-gold">New</span>
+                <span class="tag tag-live">Applications open</span>
+                <span class="tag">Deadline: Sep 22</span>
+                <span class="tag">Shoot 3–4 Oct</span>
+              </div>
+              <div class="cgroup-meta">
+                <span class="cgroup-mt">
+                  <span class="cgroup-mk">Budget range</span>
+                  <span class="cgroup-mv od-nowrap">₹15K–₹30K</span>
+                </span>
+                <span class="cgroup-mt">
+                  <span class="cgroup-mk">Cuisine</span>
+                  <span class="cgroup-mv">Desserts</span>
+                </span>
+                <span class="cgroup-mt">
+                  <span class="cgroup-mk">City</span>
+                  <span class="cgroup-mv">Mumbai</span>
+                </span>
+              </div>
+            </div>
+
+            <div class="cgroup-as">
+              <article class="appl" data-appl
+                data-appl-name="Sana M."
+                data-appl-campaign="Dessert Drop — Diwali"
+                data-appl-scope="Mumbai · shoot 3–4 Oct · ₹15K–₹30K range"
+                data-appl-meta="Desserts · Mumbai · Two reels and story set"
+                data-appl-rate="₹28,000"
+                data-appl-range="₹15K–₹30K"
+                data-appl-age="Applied 5h ago"
+                data-appl-also="Also applied to Weekend Japanese Experience at ₹45,000"
+                data-appl-note="Applied with a fixed scope: two dessert reels and a story set, shot across both Diwali pre-order services.">
+                <div class="appl-top">
+                  <span class="avatar avatar-line">S</span>
+                  <span style="min-width:0">
+                    <span class="appl-t">Sana M.</span>
+                    <span class="appl-s">Desserts · Mumbai · Two reels and story set</span>
+                  </span>
+                  <span class="appl-rate">
+                    <span class="appl-rv od-nowrap">₹28,000</span>
+                    <span class="appl-s">Inside your range</span>
+                  </span>
+                </div>
+                <div class="appl-ctx">
+                  <span class="cbadge">Dessert Drop — Diwali</span>
+                  <span class="appl-age">Applied 5h ago</span>
+                </div>
+                <span class="appl-also">Also applied to Weekend Japanese Experience at ₹45,000</span>
+                <p class="appl-s" style="margin:0">
+                  Applied with a fixed scope: two dessert reels and a story set, shot across both Diwali
+                  pre-order services.
+                </p>
+                <div class="appl-acts">
+                  <button class="btn btn-ghost btn-sm" type="button" data-sheet="appl-review">Review application</button>
+                  <button class="btn btn-quiet btn-sm" type="button" data-blocked-contact="Her contact details">View contact</button>
+                </div>
+              </article>
+
+              <article class="appl" data-appl
+                data-appl-name="Meera K."
+                data-appl-campaign="Dessert Drop — Diwali"
+                data-appl-scope="Mumbai · shoot 3–4 Oct · ₹15K–₹30K range"
+                data-appl-meta="Desserts · Mumbai · Reel, story set, menu shoot"
+                data-appl-rate="₹30,000"
+                data-appl-range="₹15K–₹30K"
+                data-appl-age="Applied 3h ago"
+                data-appl-note="Proposed a reel, a story set, and a menu shoot, and asked to keep the Diwali date flexible inside the window.">
+                <div class="appl-top">
+                  <span class="avatar">M</span>
+                  <span style="min-width:0">
+                    <span class="appl-t">Meera K.</span>
+                    <span class="appl-s">Desserts · Mumbai · Reel, story set, menu shoot</span>
+                  </span>
+                  <span class="appl-rate">
+                    <span class="appl-rv od-nowrap">₹30,000</span>
+                    <span class="appl-s">Top of your range</span>
+                  </span>
+                </div>
+                <div class="appl-ctx">
+                  <span class="cbadge">Dessert Drop — Diwali</span>
+                  <span class="appl-age is-new">New · applied 3h ago</span>
+                </div>
+                <p class="appl-s" style="margin:0">
+                  Proposed a reel, a story set, and a menu shoot, and asked to keep the Diwali date
+                  flexible inside the window.
+                </p>
+                <div class="appl-acts">
+                  <button class="btn btn-ghost btn-sm" type="button" data-sheet="appl-review">Review application</button>
+                  <button class="btn btn-quiet btn-sm" type="button" data-blocked-contact="Her contact details">View contact</button>
+                </div>
+              </article>
+
+              <article class="appl" data-appl
+                data-appl-name="Rahul V."
+                data-appl-campaign="Dessert Drop — Diwali"
+                data-appl-scope="Mumbai · shoot 3–4 Oct · ₹15K–₹30K range"
+                data-appl-meta="Desserts · Mumbai · Reel and feed post"
+                data-appl-rate="₹26,000"
+                data-appl-range="₹15K–₹30K"
+                data-appl-age="Applied 1 day ago"
+                data-appl-also="Also applied to Weekend Japanese Experience at ₹32,000"
+                data-appl-note="Proposed a reel and a feed post for the Diwali drop, and wants to bundle it into the same visit as the Japanese campaign.">
+                <div class="appl-top">
+                  <span class="avatar avatar-line">R</span>
+                  <span style="min-width:0">
+                    <span class="appl-t">Rahul V.</span>
+                    <span class="appl-s">Desserts · Mumbai · Reel and feed post</span>
+                  </span>
+                  <span class="appl-rate">
+                    <span class="appl-rv od-nowrap">₹26,000</span>
+                    <span class="appl-s">Inside your range</span>
+                  </span>
+                </div>
+                <div class="appl-ctx">
+                  <span class="cbadge">Dessert Drop — Diwali</span>
+                  <span class="appl-age">Applied 1 day ago</span>
+                </div>
+                <span class="appl-also">Also applied to Weekend Japanese Experience at ₹32,000</span>
+                <p class="appl-s" style="margin:0">
+                  Proposed a reel and a feed post for the Diwali drop, and wants to bundle it into the same
+                  visit as the Japanese campaign.
+                </p>
+                <div class="appl-acts">
+                  <button class="btn btn-ghost btn-sm" type="button" data-sheet="appl-review">Review application</button>
+                  <button class="btn btn-quiet btn-sm" type="button" data-blocked-contact="His contact details">View contact</button>
+                </div>
+              </article>
+
+              <article class="appl" data-appl
+                data-appl-name="Arjun S."
+                data-appl-campaign="Dessert Drop — Diwali"
+                data-appl-scope="Mumbai · shoot 3–4 Oct · ₹15K–₹30K range"
+                data-appl-meta="Desserts · Mumbai · One reel"
+                data-appl-rate="₹19,000"
+                data-appl-range="₹15K–₹30K"
+                data-appl-age="Waiting 4 days"
+                data-appl-note="Applied with a fixed scope: one reel from the dessert counter. Confirmed for both services.">
+                <div class="appl-top">
+                  <span class="avatar avatar-line">A</span>
+                  <span style="min-width:0">
+                    <span class="appl-t">Arjun S.</span>
+                    <span class="appl-s">Desserts · Mumbai · One reel</span>
+                  </span>
+                  <span class="appl-rate">
+                    <span class="appl-rv od-nowrap">₹19,000</span>
+                    <span class="appl-s">Inside your range</span>
+                  </span>
+                </div>
+                <div class="appl-ctx">
+                  <span class="cbadge">Dessert Drop — Diwali</span>
+                  <span class="appl-age">Waiting 4 days</span>
+                </div>
+                <p class="appl-s" style="margin:0">
+                  Applied with a fixed scope: one reel from the dessert counter. Confirmed for both
+                  services.
+                </p>
+                <div class="appl-acts">
+                  <button class="btn btn-ghost btn-sm" type="button" data-sheet="appl-review">Review application</button>
+                  <button class="btn btn-quiet btn-sm" type="button" data-blocked-contact="His contact details">View contact</button>
+                </div>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <!-- past campaigns -->
+        <section class="panel" aria-labelledby="past-t">
+          <span class="eyebrow">History</span>
+          <h2 class="h3" id="past-t">Finished campaigns</h2>
+          <div class="list-row">
+            <span class="avatar avatar-sm avatar-line">1</span>
+            <span class="list-main">
+              <span class="list-t">Monsoon Menu Launch</span>
+              <span class="list-s">Delivered · Released to the creator</span>
+            </span>
+            <button class="btn btn-quiet btn-sm" type="button" data-sheet="deal-room"
+                    data-appl-campaign="Monsoon Menu Launch"
+                    data-appl-scope="Mumbai · delivered · released to the creator"
+                    data-appl-meta="Delivered · creator paid" data-deal-link="monsoon-menu">Deal Room</button>
+          </div>
+          <div class="list-row">
+            <span class="avatar avatar-sm avatar-line">2</span>
+            <span class="list-main">
+              <span class="list-t">Chef's Table Series</span>
+              <span class="list-s">Delivered · Released to the creator</span>
+            </span>
+            <button class="btn btn-quiet btn-sm" type="button" data-sheet="deal-room"
+                    data-appl-campaign="Chef's Table Series"
+                    data-appl-scope="Mumbai · delivered · released to the creator"
+                    data-appl-meta="Delivered · creator paid" data-deal-link="chefs-table">Deal Room</button>
+          </div>
+        </section>
+      </div>
+
+      <!-- -------------------------------------------------- side column -->
+      <div class="side-stack">
+        <div class="panel">
+          <div class="between">
+            <div>
+              <span class="eyebrow">In escrow · 3 campaigns</span>
+              <h2 class="h3">₹20,000</h2>
+            </div>
+            <span class="well well-gold" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18"/></svg>
+            </span>
+          </div>
+
+          <div class="esc-cam">
+            <span class="esc-cam-t">Weekend Japanese Experience</span>
+            <div class="esc-row">
+              <span class="esc-k">Funded</span>
+              <span class="esc-v od-nowrap">₹20,000</span>
+            </div>
+            <div class="esc-row">
+              <span class="esc-k">Platform fee</span>
+              <span class="esc-v od-nowrap">− ₹2,000</span>
+            </div>
+            <div class="esc-row">
+              <span class="esc-k">Net to creator</span>
+              <span class="esc-v od-nowrap">₹18,000</span>
+            </div>
+          </div>
+
+          <div class="esc-cam">
+            <span class="esc-cam-t">Monsoon Brunch Launch</span>
+            <div class="esc-row">
+              <span class="esc-k">Funded</span>
+              <span class="esc-v od-nowrap">₹0</span>
+            </div>
+            <p class="hint mt-6">No offer accepted yet, so this campaign holds nothing.</p>
+          </div>
+
+          <div class="esc-cam">
+            <span class="esc-cam-t">Dessert Drop — Diwali</span>
+            <div class="esc-row">
+              <span class="esc-k">Funded</span>
+              <span class="esc-v od-nowrap">₹0</span>
+            </div>
+            <p class="hint mt-6">No offer accepted yet, so this campaign holds nothing.</p>
+          </div>
+
+          <div class="lockbar mt-6">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10.5" width="16" height="10" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg>
+            <span>Release is per campaign, and needs your approval of the delivered content in that campaign's deal room.</span>
+          </div>
+        </div>
+
+        <div class="panel">
+          <span class="eyebrow">Next actions</span>
+          <div class="todo">
+            <span class="bullet" aria-hidden="true"></span>
+            <span style="min-width:0">
+              <span class="todo-t">Accept the contract</span>
+              <span class="todo-s">Weekend Japanese Experience · Creator Ananya accepted the offer. Both signatures release the deal.</span>
+            </span>
+          </div>
+          <div class="todo">
+            <span class="bullet" aria-hidden="true"></span>
+            <span style="min-width:0">
+              <span class="todo-t">Answer what just came in</span>
+              <span class="todo-s">Two applications arrived in the last three hours, across Monsoon Brunch Launch and Dessert Drop — Diwali.</span>
+            </span>
+          </div>
+          <div class="todo">
+            <span class="bullet" aria-hidden="true"></span>
+            <span style="min-width:0">
+              <span class="todo-t">Watch the three deadlines</span>
+              <span class="todo-s">Sep 15, Sep 18 and Sep 22. Nine applications in total, grouped by campaign.</span>
+            </span>
+          </div>
+          <a class="btn btn-ghost btn-block mt-6" href="campaign-detail.html">Open a campaign</a>
+        </div>
+
+        <div class="panel">
+          <span class="eyebrow">Shortlisted</span>
+          <div class="list-row" style="border-top:0">
+            <span class="avatar avatar-sm">A</span>
+            <span class="list-main">
+              <span class="list-t">Creator Ananya</span>
+              <span class="list-s">Weekend Japanese Experience · Offer accepted</span>
+            </span>
+          </div>
+          <div class="list-row">
+            <span class="avatar avatar-sm avatar-line">R</span>
+            <span class="list-main">
+              <span class="list-t">Rahul V.</span>
+              <span class="list-s">Weekend Japanese Experience · Shortlisted</span>
+            </span>
+          </div>
+          <div class="list-row">
+            <span class="avatar avatar-sm avatar-line">S</span>
+            <span class="list-main">
+              <span class="list-t">Sana M.</span>
+              <span class="list-s">Dessert Drop — Diwali · Shortlisted</span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer-btm">
+      <span>CollabTable prototype — restaurant dashboard.</span>
+      <span>All amounts in Indian rupees (₹).</span>
+    </div>
+  </div>
+</footer>
+
+<!-- =========================================================== sheets -->
+<div class="sheet appl-sheet" id="appl-review" role="dialog" aria-modal="true" tabindex="-1"
+     aria-labelledby="apr-t" aria-hidden="true" data-appl-sheet>
+  <div class="sheet-grab" aria-hidden="true"></div>
+  <div class="sheet-head">
+    <div>
+      <span class="eyebrow eyebrow-red">Application</span>
+      <h2 class="h4" id="apr-t"><span data-ap-name>&#8212;</span></h2>
+      <p class="appl-s" data-ap-meta>&#8212;</p>
+    </div>
+    <button class="sheet-x" type="button" data-sheet-close aria-label="Close">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+
+  <!-- the campaign this application came for, stated before anything else -->
+  <div class="cgroup-h">
+    <div class="row-wrap">
+      <span class="cbadge" data-ap-campaign>&#8212;</span>
+      <span class="appl-age" data-ap-age></span>
+    </div>
+  </div>
+
+  <div class="hair hair-2 mt-6">
+    <div>
+      <span class="amt-k">Asked for</span>
+      <span class="amount od-nowrap" data-ap-rate>&#8212;</span>
+    </div>
+    <div>
+      <span class="amt-k">Campaign range</span>
+      <span class="amount amount-gold od-nowrap" data-ap-range>&#8212;</span>
+    </div>
+  </div>
+
+  <p class="appl-s mt-6" style="margin:0" data-ap-note>&#8212;</p>
+  <span class="appl-also mt-4" data-ap-also hidden></span>
+
+  <div class="lockbar mt-6">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10.5" width="16" height="10" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg>
+    <span data-blocked-contact="Contact details stay hidden">Contact details unlock only after a deal is accepted and money moves.</span>
+  </div>
+
+  <div class="row-wrap mt-6">
+    <button class="btn btn-primary" type="button" data-sheet="deal-room" data-deal-link="weekend-japanese">Open Deal Room</button>
+    <button class="btn btn-ghost" type="button" data-sheet="deal-room" data-deal-link="weekend-japanese">Deal Room</button>
+    <button class="btn btn-quiet" type="button" data-sheet-close>Close</button>
+  </div>
+</div>
+
+<!-- ====================================================== deal room pop-up -->
+<!-- One centred pop-up, not a screen. The room is mounted from the shared deal
+     module in assets/app.js, so every surface opens the identical deal; this
+     element only says which side of the deal you are looking at. -->
+<div class="sheet sheet-deal" id="deal-room" role="dialog" aria-modal="true" tabindex="-1"
+     aria-labelledby="deal-room-t" aria-hidden="true"
+     data-deal data-deal-role="restaurant"></div>
+
+<div class="scrim" data-scrim></div>
+<script src="assets/app.js"></script>
+</body>
+</html>

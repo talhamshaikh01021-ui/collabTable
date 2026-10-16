@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in — CollabTable</title>
+<meta name="description" content="Sign in to CollabTable — restaurant or creator account.">
+<meta name="theme-color" content="#FE002A">
+<style>
+/* OD-LAYOUT-PRIMITIVES v1 — structure only: display, flex/grid, overflow, wrapping, ratio.
+   Put this @layer first; product CSS outside the layer always wins. */
+@layer od-layout {
+  :where(.od-stack,.od-row,.od-row-top,.od-cluster,.od-grid,.od-field,.od-stat,.od-cell,.od-tile) > :where(*) { min-width: 0; }
+
+  /* containers */
+  .od-stack   { display: flex; flex-direction: column; gap: var(--od-gap, 8px); }
+  .od-row     { display: flex; align-items: center; gap: var(--od-gap, 8px); }
+  .od-row-top { display: flex; align-items: flex-start; gap: var(--od-gap, 8px); }
+  .od-cluster { display: flex; flex-wrap: wrap; align-items: center; gap: var(--od-gap, 8px); }
+  .od-fill    { flex: 1 1 0; min-width: 0; }
+  .od-fixed   { flex: none; }
+  .od-grid    { display: grid; gap: var(--od-gap, 12px); grid-template-columns: repeat(var(--od-cols, 3), minmax(0, 1fr)); }
+
+  /* stacked information: each piece is its own line — never sibling inline spans */
+  .od-stat, .od-field, .od-cell { display: grid; gap: var(--od-gap, 2px); }
+  :where(.od-stat,.od-field,.od-cell) > :where(*) { display: block; }
+  .od-tile { display: grid; grid-template-rows: auto 1fr; }
+  :where(.od-tile) > :where(*) { display: block; }
+
+  /* media keeps its intrinsic ratio by default; never a distorted or cropped
+     cover by accident. height:auto lets the ratio win over an <img height="…">
+     attribute. Cropping to a uniform box is an explicit opt-in: set --od-ratio
+     AND add .od-media-cover together (per the core rule, only where a crop is
+     deliberate — tile thumbs, decorative fills — never on full-frame content). */
+  .od-media { display: block; width: 100%; height: auto; aspect-ratio: var(--od-ratio, auto); }
+  .od-media-cover { object-fit: cover; }
+
+  /* data text only — authored copy is rewritten to its budget instead */
+  .od-truncate { display: block; max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .od-clamp-2, .od-clamp-3 { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+  .od-clamp-2 { -webkit-line-clamp: 2; }
+  .od-clamp-3 { -webkit-line-clamp: 3; }
+  .od-lines-2 { min-height: calc(2 * 1.4em); }
+  .od-nowrap  { white-space: nowrap; }
+  .od-keep    { word-break: keep-all; overflow-wrap: anywhere; }
+
+  /* screen skeleton (optional): bars take their own space, the middle scrolls — no padding guessed for chrome */
+  .od-screen { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; height: 100%; }
+  .od-scroll { overflow-y: auto; overscroll-behavior: contain; min-height: 0; }
+
+  /* horizontal rail: the next item peeks at the edge; trailing room survives overflow */
+  .od-rail { display: flex; gap: var(--od-gap, 8px); overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none;
+             padding-inline: var(--od-rail-pad, 16px); scroll-padding-inline: var(--od-rail-pad, 16px); }
+  .od-rail::-webkit-scrollbar { display: none; }
+  :where(.od-rail) > :where(*) { flex: none; scroll-snap-align: start; }
+  :where(.od-rail) > :where(:last-child) { margin-inline-end: var(--od-rail-pad, 16px); }
+
+  .od-spacer { flex: none; visibility: hidden; pointer-events: none; }
+  .od-touch  { min-width: 44px; min-height: 44px; }
+}
+/* /OD-LAYOUT-PRIMITIVES v1 */
+</style>
+<link rel="stylesheet" href="assets/theme.css">
+<style>
+  .sg-shell { display: grid; place-items: center; min-height: 100vh; padding: var(--s6) var(--s4); }
+  .sg-card { width: 100%; max-width: 420px; background: var(--surface); border: 1px solid var(--line-10); border-radius: var(--r-xl); padding: var(--s7) var(--s6); }
+  .sg-head { text-align: center; margin-bottom: var(--s6); }
+  .sg-brand { display: inline-flex; align-items: center; gap: var(--s3); font-size: var(--f-2xl); font-weight: 500; color: var(--fg); margin-bottom: var(--s2); }
+  .sg-brand svg { width: 28px; height: 28px; color: var(--primary); }
+  .sg-title { font-size: var(--f-xl); font-weight: 500; color: var(--fg); margin-bottom: var(--s1); }
+  .sg-sub { font-size: var(--f-sm); color: var(--muted-fg); }
+  .sg-sub #sg-role-label { color: var(--primary); font-weight: 600; }
+
+  /* Role toggle */
+  .sg-role { display: flex; background: var(--surface-2); border: 1px solid var(--line-10); border-radius: var(--r-pill); padding: 3px; margin-bottom: var(--s6); position: relative; }
+  .sg-role input { position: absolute; opacity: 0; width: 0; height: 0; }
+  .sg-role-btn { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: var(--s2); padding: 10px var(--s4); font-size: var(--f-sm); font-weight: 500; color: var(--fg-3); border: none; background: transparent; border-radius: var(--r-md); cursor: pointer; transition: color var(--dur-1) var(--ease-out), background var(--dur-1) var(--ease-out); white-space: nowrap; }
+  .sg-role-btn:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .sg-role-btn .sg-icon { display: block; width: 18px; height: 18px; color: currentColor; }
+  .sg-role input:checked + .sg-role-btn { color: var(--fg); background: var(--primary); }
+  .sg-role input:checked + .sg-role-btn .sg-icon { color: var(--fg); }
+  .sg-role-indicator { position: absolute; top: 3px; left: 3px; bottom: 3px; width: 50%; background: var(--primary); border-radius: var(--r-md); transition: transform var(--dur-2) var(--ease-out), background var(--dur-2) var(--ease-out); will-change: transform; opacity: 0; }
+  .sg-role input[name="role"][value="creator"]:checked ~ .sg-role-indicator { transform: translateX(100%); }
+  .sg-role input[name="role"][value="restaurant"]:checked ~ .sg-role-indicator { transform: translateX(0); }
+
+  /* Form */
+  .sg-form { display: grid; gap: var(--s4); }
+  .sg-field { display: grid; gap: var(--s1); }
+  .sg-label { display: block; font-size: var(--f-sm); font-weight: 500; color: var(--fg); }
+  .sg-input { width: 100%; padding: 12px var(--s3); font-size: var(--f-body); font-family: inherit; color: var(--fg); background: var(--surface); border: 1px solid var(--line-10); border-radius: var(--r-md); transition: border-color var(--dur-1) var(--ease-out), box-shadow var(--dur-1) var(--ease-out); }
+  .sg-input::placeholder { color: var(--fg-4); }
+  .sg-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-15); }
+  .sg-input[data-invalid="true"] { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-15); }
+  .sg-err { display: block; font-size: var(--f-xs); color: var(--primary); min-height: 1em; }
+
+  .sg-row { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); }
+  .sg-check { display: inline-flex; align-items: center; gap: var(--s2); cursor: pointer; }
+  .sg-check input { position: absolute; opacity: 0; width: 0; height: 0; }
+  .sg-check-box { width: 20px; height: 20px; display: grid; place-items: center; border: 1px solid var(--line-15); border-radius: var(--r-sm); background: var(--surface); color: var(--fg); transition: border-color var(--dur-1) var(--ease-out), background var(--dur-1) var(--ease-out), color var(--dur-1) var(--ease-out); }
+  .sg-check input:focus-visible + .sg-check-box { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .sg-check input:checked + .sg-check-box { border-color: var(--primary); background: var(--primary); color: var(--fg); }
+  .sg-check input:checked + .sg-check-box::after { content: ""; width: 5px; height: 10px; border: 2px solid currentColor; border-top: 0; border-left: 0; transform: rotate(45deg); }
+  .sg-check-label { font-size: var(--f-sm); color: var(--fg-2); }
+  .sg-link { color: var(--primary); font-size: var(--f-sm); font-weight: 500; text-decoration: none; }
+  .sg-link:hover { text-decoration: underline; }
+
+  .sg-submit { display: inline-flex; align-items: center; justify-content: center; gap: var(--s2); width: 100%; padding: 14px var(--s4); font-size: var(--f-sm); font-weight: 500; font-family: inherit; color: var(--fg); background: var(--primary); border: none; border-radius: var(--r-pill); cursor: pointer; transition: background var(--dur-1) var(--ease-out), box-shadow var(--dur-1) var(--ease-out); min-height: 48px; }
+  .sg-submit:hover { background: var(--primary-press); box-shadow: var(--sh-red); }
+  .sg-submit:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .sg-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .sg-divider { display: flex; align-items: center; gap: var(--s3); margin: var(--s4) 0; }
+  .sg-divider::before, .sg-divider::after { content: ""; flex: 1; height: 1px; background: var(--line-10); }
+  .sg-divider span { font-size: var(--f-xs); font-weight: 500; color: var(--fg-4); text-transform: uppercase; letter-spacing: 0.05em; }
+
+  .sg-alt { text-align: center; font-size: var(--f-sm); color: var(--muted-fg); margin-top: var(--s4); }
+  .sg-alt-link { color: var(--primary); font-weight: 500; text-decoration: none; }
+  .sg-alt-link:hover { text-decoration: underline; }
+
+  .sg-hint { display: block; font-size: var(--f-xs); color: var(--fg-4); margin-top: var(--s1); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sg-role-indicator { transition: none; }
+    .sg-input, .sg-check-box, .sg-submit, .sg-role-btn { transition: none; }
+  }
+</style>
+</head>
+<body>
+<div class="bloom" aria-hidden="true"></div>
+
+<header class="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="index.html" aria-label="CollabTable home">
+      <span class="brand-a">COLLAB</span><span class="brand-b">TABLE</span>
+    </a>
+    <nav class="nav-links" aria-label="Primary">
+      <a class="nav-link" href="landing.html">Overview</a>
+      <a class="nav-link" href="discover-creators.html">For restaurants</a>
+      <a class="nav-link" href="discover-restaurants.html">For creators</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <section class="section" style="padding-top: var(--s8); padding-bottom: var(--s10);">
+    <div class="wrap">
+      <div class="sg-shell">
+        <div class="sg-card" role="main">
+          <header class="sg-head">
+            <div class="sg-brand">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="4" y="4" width="16" height="16" rx="3"/>
+                <path d="M8 12h8M12 8v8"/>
+              </svg>
+              <span>COLLAB<span class="brand-b">TABLE</span></span>
+            </div>
+            <h1 class="sg-title">Welcome back</h1>
+            <p class="sg-sub">Sign in to your <span id="sg-role-label">restaurant</span> account</p>
+          </header>
+
+          <!-- Role Toggle -->
+          <div class="sg-role" role="radiogroup" aria-label="Account type">
+            <input type="radio" name="role" value="restaurant" id="role-restaurant" checked>
+            <label class="sg-role-btn" for="role-restaurant">
+              <svg class="sg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="4" y="4" width="16" height="16" rx="2"/>
+                <path d="M8 12h8M12 8v8"/>
+              </svg>
+              <span>Restaurant</span>
+            </label>
+            <input type="radio" name="role" value="creator" id="role-creator">
+            <label class="sg-role-btn" for="role-creator">
+              <svg class="sg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+              <span>Creator</span>
+            </label>
+            <span class="sg-role-indicator" aria-hidden="true"></span>
+          </div>
+
+          <form class="sg-form" id="sg-form" novalidate>
+            <div class="form-sum" data-form-summary role="alert" aria-live="polite"></div>
+
+            <div class="sg-field">
+              <label class="sg-label label-req" for="sg-email">Email</label>
+              <input class="input sg-input" id="sg-email" name="email" type="email" required autocomplete="email" placeholder="you@example.com" data-req-group="sg-email-group">
+              <p class="err" data-ok="" id="sg-email-err">Enter a valid email address.</p>
+            </div>
+
+            <div class="sg-field">
+              <label class="sg-label label-req" for="sg-pass">Password</label>
+              <input class="input sg-input" id="sg-pass" name="password" type="password" required autocomplete="current-password" placeholder="Enter your password" data-match="^.{8,}$" data-req-group="sg-pass-group">
+              <p class="err" data-ok="" id="sg-pass-err">Password must be at least 8 characters.</p>
+            </div>
+
+            <div class="sg-row">
+              <label class="sg-check">
+                <input type="checkbox" name="remember" id="sg-remember">
+                <span class="sg-check-box" aria-hidden="true"></span>
+                <span class="sg-check-label">Remember me</span>
+              </label>
+              <a class="sg-link" href="#" id="sg-forgot">Forgot password?</a>
+            </div>
+
+            <div class="form-sum" data-form-summary role="alert"></div>
+
+            <button type="submit" class="sg-submit" id="sg-submit">
+              <span>Sign in</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M5 12h14M13 6l6 6-6 6"/>
+              </svg>
+            </button>
+          </form>
+
+          <div class="sg-divider"><span>or continue with</span></div>
+
+          <div class="sg-row" style="flex-direction: column; gap: var(--s2); align-items: stretch;">
+            <a class="btn btn-quiet sg-submit" style="background: var(--surface-2); border-color: var(--line-15); color: var(--fg); justify-content: center;" href="restaurant-onboarding.html">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="4" y="4" width="16" height="16" rx="2"/>
+                <path d="M8 12h8M12 8v8"/>
+              </svg>
+              <span>Create restaurant account</span>
+            </a>
+            <a class="btn btn-quiet sg-submit" style="background: var(--surface-2); border-color: var(--line-15); color: var(--fg); justify-content: center;" href="influencer-onboarding.html">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+              <span>Create creator account</span>
+            </a>
+          </div>
+
+          <p class="sg-hint" id="sg-hint">By continuing, you agree to CollabTable's <a class="sg-link" href="#">Terms of Service</a> and <a class="sg-link" href="#">Privacy Policy</a>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer-top">
+      <div style="max-width:280px">
+        <span class="brand"><span class="brand-a">COLLAB</span><span class="brand-b">TABLE</span></span>
+        <p class="idx-d mt-6">Where restaurants meet the right creators.</p>
+      </div>
+      <div>
+        <span class="footer-h">Screens</span>
+        <a class="footer-link" href="landing.html">Overview</a>
+        <a class="footer-link" href="restaurant-onboarding.html">Restaurant onboarding</a>
+        <a class="footer-link" href="influencer-onboarding.html">Creator onboarding</a>
+      </div>
+      <div>
+        <span class="footer-h">Marketplace</span>
+        <a class="footer-link" href="discover-creators.html">Discover creators</a>
+        <a class="footer-link" href="discover-restaurants.html">Discover campaigns</a>
+        <a class="footer-link" href="campaign-detail.html">Campaign detail</a>
+      </div>
+      <div>
+        <span class="footer-h">Deal flow</span>
+        <button class="footer-link" type="button" data-sheet="deal-room" data-deal-link="weekend-japanese">Deal Room</button>
+        <a class="footer-link" href="restaurant-dashboard.html">Restaurant dashboard</a>
+        <a class="footer-link" href="influencer-dashboard.html">Creator dashboard</a>
+      </div>
+    </div>
+    <div class="footer-btm">
+      <span>CollabTable prototype — editable HTML source.</span>
+      <span>All amounts in Indian rupees (₹).</span>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/app.js"></script>
+<script>
+/* Sign-in page specific logic */
+(function () {
+  // Role toggle handling
+  const roleRadios = document.querySelectorAll('input[name="role"]');
+  const roleLabel = document.getElementById('sg-role-label');
+  const roleTextMap = { restaurant: 'restaurant', creator: 'creator' };
+
+  roleRadios.forEach(function (radio) {
+    radio.addEventListener('change', function () {
+      if (this.checked) {
+        roleLabel.textContent = roleTextMap[this.value];
+        // Update form placeholders/behavior if needed
+        var emailInput = document.getElementById('sg-email');
+        var passInput = document.getElementById('sg-pass');
+        if (this.value === 'creator') {
+          emailInput.placeholder = 'creator@example.com';
+          passInput.placeholder = 'Enter your password';
+        } else {
+          emailInput.placeholder = 'you@restaurant.com';
+          passInput.placeholder = 'Enter your password';
+        }
+      }
+    });
+  });
+
+  // Form validation (uses existing initForms from assets/app.js)
+  // The data-form / data-req-group / data-match attributes hook into initForms automatically.
+  // We just need to ensure the form has data-form attribute.
+  var form = document.getElementById('sg-form');
+  if (form && !form.hasAttribute('data-form')) {
+    form.setAttribute('data-form', '');
+    form.setAttribute('data-reset', '');
+    form.setAttribute('data-success', 'Signed in successfully.');
+  }
+
+  // Forgot password handler (placeholder)
+  var forgot = document.getElementById('sg-forgot');
+  if (forgot) {
+    forgot.addEventListener('click', function (e) {
+      e.preventDefault();
+      if (window.toast) {
+        window.toast('Password reset link sent to your email.');
+      }
+    });
+  }
+
+  // Remember me persistence (optional)
+  var remember = document.getElementById('sg-remember');
+  if (remember) {
+    var saved = localStorage.getItem('collabtable.remember');
+    if (saved) {
+      var data = JSON.parse(saved);
+      var emailInput = document.getElementById('sg-email');
+      if (data.email && emailInput) emailInput.value = data.email;
+      remember.checked = true;
+    }
+    remember.addEventListener('change', function () {
+      var emailInput = document.getElementById('sg-email');
+      if (this.checked && emailInput && emailInput.value) {
+        localStorage.setItem('collabtable.remember', JSON.stringify({ email: emailInput.value }));
+      } else {
+        localStorage.removeItem('collabtable.remember');
+      }
+    });
+  }
+})();
+</script>
+</body>
+</html>

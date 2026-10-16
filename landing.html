@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CollabTable — Where Restaurants Meet the Right Creators</title>
+<meta name="description" content="CollabTable connects restaurants with food creators: post a campaign, negotiate, contract, escrow, deliver, and review.">
+<meta name="theme-color" content="#FE002A">
+<style>
+/* OD-LAYOUT-PRIMITIVES v1 — structure only: display, flex/grid, overflow, wrapping, ratio.
+   Put this @layer first; product CSS outside the layer always wins. */
+@layer od-layout {
+  :where(.od-stack,.od-row,.od-row-top,.od-cluster,.od-grid,.od-field,.od-stat,.od-cell,.od-tile) > :where(*) { min-width: 0; }
+
+  /* containers */
+  .od-stack   { display: flex; flex-direction: column; gap: var(--od-gap, 8px); }
+  .od-row     { display: flex; align-items: center; gap: var(--od-gap, 8px); }
+  .od-row-top { display: flex; align-items: flex-start; gap: var(--od-gap, 8px); }
+  .od-cluster { display: flex; flex-wrap: wrap; align-items: center; gap: var(--od-gap, 8px); }
+  .od-fill    { flex: 1 1 0; min-width: 0; }
+  .od-fixed   { flex: none; }
+  .od-grid    { display: grid; gap: var(--od-gap, 12px); grid-template-columns: repeat(var(--od-cols, 3), minmax(0, 1fr)); }
+
+  /* stacked information: each piece is its own line — never sibling inline spans */
+  .od-stat, .od-field, .od-cell { display: grid; gap: var(--od-gap, 2px); }
+  :where(.od-stat,.od-field,.od-cell) > :where(*) { display: block; }
+  .od-tile { display: grid; grid-template-rows: auto 1fr; }
+  :where(.od-tile) > :where(*) { display: block; }
+
+  /* media keeps its intrinsic ratio by default; never a distorted or cropped
+     cover by accident. height:auto lets the ratio win over an <img height="…">
+     attribute. Cropping to a uniform box is an explicit opt-in: set --od-ratio
+     AND add .od-media-cover together (per the core rule, only where a crop is
+     deliberate — tile thumbs, decorative fills — never on full-frame content). */
+  .od-media { display: block; width: 100%; height: auto; aspect-ratio: var(--od-ratio, auto); }
+  .od-media-cover { object-fit: cover; }
+
+  /* data text only — authored copy is rewritten to its budget instead */
+  .od-truncate { display: block; max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .od-clamp-2, .od-clamp-3 { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+  .od-clamp-2 { -webkit-line-clamp: 2; }
+  .od-clamp-3 { -webkit-line-clamp: 3; }
+  .od-lines-2 { min-height: calc(2 * 1.4em); }   /* block-level reservation for a shared baseline */
+  .od-nowrap  { white-space: nowrap; }           /* 数字+单位 · 价格+起 · 日期+星期 */
+  .od-keep    { word-break: keep-all; overflow-wrap: anywhere; } /* CJK labels break at spaces / <wbr> first */
+
+  /* screen skeleton (optional): bars take their own space, the middle scrolls — no padding guessed for chrome */
+  .od-screen { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; height: 100%; }
+  .od-scroll { overflow-y: auto; overscroll-behavior: contain; min-height: 0; }
+
+  /* horizontal rail: the next item peeks at the edge; trailing room survives overflow */
+  .od-rail { display: flex; gap: var(--od-gap, 8px); overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none;
+             padding-inline: var(--od-rail-pad, 16px); scroll-padding-inline: var(--od-rail-pad, 16px); }
+  .od-rail::-webkit-scrollbar { display: none; }
+  :where(.od-rail) > :where(*) { flex: none; scroll-snap-align: start; }
+  :where(.od-rail) > :where(:last-child) { margin-inline-end: var(--od-rail-pad, 16px); }
+
+  .od-spacer { flex: none; visibility: hidden; pointer-events: none; }
+  .od-touch  { min-width: 44px; min-height: 44px; }
+}
+/* /OD-LAYOUT-PRIMITIVES v1 */
+</style>
+<link rel="stylesheet" href="assets/theme.css">
+<style>
+  .hero { position: relative; padding-top: 80px; padding-bottom: 40px; }
+  .hero-art { position: relative; border: 1px solid var(--line-10); border-radius: var(--r-3xl); overflow: hidden; background: var(--surface); }
+  .hero-art .media::after { background: linear-gradient(to top, rgba(0,0,0,0.92), rgba(0,0,0,0.3) 55%, transparent); }
+  /* ---- hero product video: measured 1920x1080, so the frame is a true 16:9 ---- */
+  .vframe { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000; }
+  .vframe video { display: block; width: 100%; height: 100%; object-fit: cover; background: #000; }
+  .vcap { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+    padding: 16px 18px; border-top: 1px solid var(--line-10); }
+  .vcap-text { display: block; min-width: 0; }
+  .vcap-t { display: block; font-weight: 500; color: var(--fg); }
+  .vcap-s { display: block; margin-top: 4px; font-size: var(--f-xs); color: var(--fg-2); }
+  .vbtn { flex: none; display: inline-flex; align-items: center; gap: 8px;
+    min-height: 44px; padding: 10px 18px 10px 14px; border-radius: 9999px; cursor: pointer;
+    background: var(--surface-2); border: 1px solid var(--line-20); color: var(--fg);
+    font: inherit; font-size: 13px; font-weight: 500; transition: border-color 200ms ease, background 200ms ease; }
+  .vbtn:hover { border-color: var(--primary-40); }
+  .vbtn-icon { flex: none; display: none; }
+  .vicon-play { display: block; color: var(--primary); }
+  .vframe.is-playing .vicon-play { display: none; }
+  .vframe.is-playing .vicon-pause { display: block; color: var(--fg); }
+  .vtrans { margin-top: 12px; border: 1px solid var(--line-10); border-radius: var(--r-lg); background: var(--surface); }
+  .vtrans > summary { padding: 12px 16px; cursor: pointer; font-size: 13px; font-weight: 500; color: var(--fg-2); }
+  .vtrans-body { display: grid; gap: 10px; padding: 0 16px 16px; }
+  .vtrans-body p { font-size: 14px; line-height: 1.6; color: var(--fg-2); }
+  .vtrans-body b { color: var(--fg); font-weight: 500; }
+  @media (prefers-reduced-motion: reduce) { .vbtn { transition: none; } }
+  .flow-line { display: flex; align-items: center; gap: 10px; }
+  .flow-n { display: block; font-size: 12px; font-weight: 500; letter-spacing: 0.1em; color: var(--fg-5); }
+  .flow-t { display: block; font-size: 15px; font-weight: 500; color: var(--fg); }
+  .flow-s { display: block; margin-top: 2px; font-size: 13px; color: var(--muted-fg); }
+  .side-t { display: block; font-weight: 500; color: var(--fg); }
+  .side-s { display: block; margin-top: 4px; font-size: 13px; color: var(--muted-fg); }
+  .split { display: grid; gap: 32px; grid-template-columns: 1fr; }
+  .plan { position: relative; padding: 24px; background: var(--surface); border: 1px solid var(--line-10); border-radius: var(--r-lg); }
+  .plan-hero { border-color: var(--primary-40); }
+  .plan-badge { position: absolute; top: 16px; right: 16px; }
+  .quote-card { padding: 24px; background: var(--surface); border: 1px solid var(--line-10); border-radius: var(--r-lg); }
+  .quote-t { display: block; font-size: 15px; font-weight: 500; color: var(--fg); }
+  .quote-s { display: block; margin-top: 10px; font-size: 14px; line-height: 1.6; color: var(--fg-2); }
+  .cta-band { position: relative; border: 1px solid var(--line-10); border-radius: var(--r-3xl); background: var(--surface); padding: 40px 32px; overflow: hidden; }
+  .cta-band::before { content: ''; position: absolute; inset: 0; background: radial-gradient(40rem 22rem at 50% 0%, var(--primary-15), transparent 70%); pointer-events: none; }
+  .cta-band > * { position: relative; }
+  /* ---- last 7 days: two counter-drifting lanes, paused on hover and focus ---- */
+  .lane-block + .lane-block { margin-top: var(--s5); }
+  .lane-bar { display: flex; align-items: center; justify-content: space-between; gap: var(--s4); margin-bottom: var(--s3); }
+  .lane-label { font-size: var(--f-xs); font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-4); }
+  .lane-nav { display: flex; gap: var(--s2); }
+  .lane-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--line-15);
+    border-radius: var(--r-pill);
+    background: var(--surface);
+    color: var(--fg-2);
+    cursor: pointer;
+    transition: border-color var(--dur-2) var(--ease-out), color var(--dur-2) var(--ease-out), background var(--dur-2) var(--ease-out);
+  }
+  @media (hover: hover) { .lane-btn:hover { border-color: var(--line-40); color: var(--fg); background: var(--surface-2); } }
+  .lane-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  .lane {
+    position: relative;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent);
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent);
+  }
+  .lane::-webkit-scrollbar { display: none; }
+  .lane-track { display: flex; width: max-content; animation: lane-drift 72s linear infinite; }
+  .lane-rev .lane-track { animation-direction: reverse; }
+  .lane:hover .lane-track,
+  .lane:focus-within .lane-track,
+  .lane.is-dragging .lane-track { animation-play-state: paused; }
+  .lanes-paused .lane-track { animation-play-state: paused; }
+  @media (hover: hover) { .lane { cursor: grab; } .lane.is-dragging { cursor: grabbing; } }
+  @keyframes lane-drift { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+  .lane-set { display: flex; gap: var(--s4); padding-right: var(--s4); }
+  .lane-card {
+    display: grid;
+    grid-template-columns: 132px minmax(0, 1fr);
+    align-items: start;
+    gap: var(--s4);
+    width: 348px;
+    padding: var(--s3);
+    background: var(--surface);
+    border: 1px solid var(--line-10);
+    border-radius: var(--r-lg);
+    color: inherit;
+    text-decoration: none;
+    transition: border-color var(--dur-2) var(--ease-out), transform var(--dur-2) var(--ease-out);
+  }
+  .lane-card:hover { border-color: var(--line-20); transform: translateY(-2px); }
+  .lane-card:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  .lane-card-app { grid-template-columns: 40px minmax(0, 1fr); }
+  .lane-card .media { border-radius: var(--r-md); }
+  .lane-t { display: block; font-size: var(--f-sm); font-weight: 500; color: var(--fg); }
+  .lane-s { display: block; margin-top: 2px; font-size: var(--f-xs); color: var(--muted-fg); }
+  .lane-k { display: block; font-size: var(--f-xs); color: var(--fg-4); }
+  .lane-v { display: block; font-size: var(--f-sm); color: var(--fg); }
+  .lane-foot { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); margin-top: var(--s3); }
+  .lane .tag-live::before { animation: pulse 2.4s var(--ease-out) infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.8); } }
+  @media (prefers-reduced-motion: reduce) { .lane-track, .lane .tag-live::before { animation: none; } }
+  @media (min-width: 1024px) { .split { grid-template-columns: 1.05fr 0.95fr; align-items: center; } }
+</style>
+</head>
+<body>
+<div class="bloom" aria-hidden="true"></div>
+
+<header class="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="index.html" aria-label="CollabTable home">
+      <span class="brand-a">COLLAB</span><span class="brand-b">TABLE</span>
+    </a>
+    <nav class="nav-links" aria-label="Primary">
+      <a class="nav-link" href="landing.html" aria-current="page">Overview</a>
+      <a class="nav-link" href="discover-creators.html">For restaurants</a>
+      <a class="nav-link" href="discover-restaurants.html">For creators</a>
+    </nav>
+    <div class="nav-actions">
+      <a class="btn btn-quiet" href="restaurant-onboarding.html">Restaurant signup</a>
+      <a class="btn btn-primary" href="influencer-onboarding.html">Creator signup</a>
+      <button class="burger" type="button" data-burger aria-expanded="false" aria-controls="mnav" aria-label="Open menu">
+        <span></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="mnav" id="mnav" data-mnav aria-hidden="true">
+  <a class="mnav-link" href="landing.html" aria-current="page">Overview</a>
+  <a class="mnav-link" href="discover-creators.html">Discover creators</a>
+  <a class="mnav-link" href="discover-restaurants.html">Discover restaurants</a>
+  <a class="mnav-link" href="restaurant-dashboard.html">Restaurant dashboard</a>
+  <a class="mnav-link" href="influencer-dashboard.html">Creator dashboard</a>
+  <a class="mnav-link" href="restaurant-onboarding.html">Restaurant onboarding</a>
+  <a class="mnav-link" href="influencer-onboarding.html">Creator onboarding</a>
+  <a class="mnav-link" href="campaign-detail.html">Campaign detail</a>
+  <a class="mnav-link" href="index.html">All screens</a>
+</div>
+
+<main class="page">
+
+  <!-- ============================================================ hero -->
+  <section class="hero">
+    <div class="wrap">
+      <div class="split">
+        <div>
+          <span class="eyebrow eyebrow-red">Restaurant × food creator</span>
+          <h1 class="display">Where restaurants meet the <span class="hl-red">right creators</span>.</h1>
+          <p class="lede mt-6">Post a campaign, meet creators who already shoot the food you serve,
+            agree the terms in one place, and pay through escrow when the content lands.</p>
+          <div class="row-wrap mt-8">
+            <a class="btn btn-primary" href="restaurant-onboarding.html">
+              Post your first campaign
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </a>
+            <a class="btn btn-ghost" href="influencer-onboarding.html">I'm a creator</a>
+          </div>
+          <div class="ticks mt-8" style="max-width:420px">
+            <span class="tick">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+              <span>Escrow holds payment until you approve the delivered content</span>
+            </span>
+            <span class="tick">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+              <span>Contact details stay hidden until both sides accept a deal</span>
+            </span>
+            <span class="tick">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+              <span>Negotiation, contract, and payment live in one deal room</span>
+            </span>
+          </div>
+        </div>
+
+        <figure style="margin:0">
+          <div class="hero-art" data-video>
+            <div class="vframe">
+              <video data-video-el width="1920" height="1080" preload="auto" muted loop playsinline
+                     poster="assets/media/collabtable-overview-poster.jpg"
+                     aria-label="CollabTable product overview: how a restaurant and a food creator run a campaign from posting it to escrow payout"
+                     aria-describedby="hero-video-transcript">
+                <source src="assets/media/collabtable-overview.mp4" type="video/mp4">
+                Your browser cannot play this video.
+                <a href="assets/media/collabtable-overview.mp4">Download the CollabTable product overview (MP4, 2.7 MB)</a>.
+              </video>
+            </div>
+            <figcaption class="vcap">
+              <div class="vcap-text">
+                <span class="vcap-t">How a CollabTable campaign runs</span>
+                <span class="vcap-s">Post · creators apply · negotiate · contract · escrow payout</span>
+              </div>
+              <button class="vbtn" type="button" data-video-toggle>
+                <svg class="vbtn-icon vicon-play" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+                <svg class="vbtn-icon vicon-pause" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
+                <span data-video-label>Play overview</span>
+              </button>
+            </figcaption>
+          </div>
+          <details class="vtrans" id="hero-video-transcript">
+            <summary>Read the video transcript</summary>
+            <div class="vtrans-body">
+              <p><b>0:00 — CollabTable.</b> Post a campaign. Meet the creators who already shoot the food you serve. Five stages, one deal room, escrow payout.</p>
+              <p><b>0:03 — 01 · Post a campaign.</b> Sakura House posts a live campaign, Weekend Japanese Experience, in Mumbai, at ₹20K–₹50K per creator, with two of three creator slots filled.</p>
+              <p><b>0:07 — 02 · Creators apply.</b> Three food creators from Mumbai apply, asking ₹20,000, ₹32,000 and ₹45,000. Names, numbers and handles stay masked until the creator is paid.</p>
+              <p><b>0:11 — 03 · Negotiate.</b> The restaurant counters at ₹25,000, the creator counters at ₹30,000 including two reels and three stories, and the restaurant accepts ₹30,000. Platform fee 10%: ₹3,000. Creator payout: ₹27,000.</p>
+              <p><b>0:15 — 04 · Contract.</b> The finalised deal is written down — campaign, restaurant, deliverables, shoot window Saturday 12 to Sunday 18 October, six months of organic and paid usage, ₹30,000 fee, ₹27,000 payout on approval, 48 hours cancellation with a 50% retainer. Both sides sign.</p>
+              <p><b>0:19 — 05 · Escrow payout.</b> The restaurant funds ₹30,000, the creator delivers, the restaurant approves, and ₹27,000 is released to the creator. Contact details unlock only after the payout.</p>
+              <p><b>0:22 — CollabTable.</b> Five stages. One deal room. Restaurants meet the right creators.</p>
+            </div>
+          </details>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================== trust marquee -->
+  <section class="section-sm">
+    <div class="marquee" aria-label="Cities and cuisines active on CollabTable">
+      <div class="marquee-track" aria-hidden="true">
+        <span class="marquee-item">Mumbai</span><span class="marquee-sep"></span>
+        <span class="marquee-item">Japanese</span><span class="marquee-sep"></span>
+        <span class="marquee-item">North Indian</span><span class="marquee-sep"></span>
+        <span class="marquee-item">South Indian</span><span class="marquee-sep"></span>
+        <span class="marquee-item">Street food</span><span class="marquee-sep"></span>
+        <span class="marquee-item">Desserts</span><span class="marquee-sep"></span>
+        <span class="marquee-item">Cafe &amp; bakery</span><span class="marquee-sep"></span>
+        <span class="marquee-item">Biryani</span><span class="marquee-sep"></span>
+        <span class="marquee-item">Mumbai</span><span class="marquee-sep"></span>
+        <span class="marquee-item">Japanese</span><span class="marquee-sep"></span>
+        <span class="marquee-item">North Indian</span><span class="marquee-sep"></span>
+        <span class="marquee-item">South Indian</span><span class="marquee-sep"></span>
+        <span class="marquee-item">Street food</span><span class="marquee-sep"></span>
+        <span class="marquee-item">Desserts</span><span class="marquee-sep"></span>
+        <span class="marquee-item">Cafe &amp; bakery</span><span class="marquee-sep"></span>
+        <span class="marquee-item">Biryani</span><span class="marquee-sep"></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================================== the five stages -->
+  <section class="section">
+    <div class="wrap">
+      <div class="sec-head center">
+        <span class="eyebrow">How a campaign runs</span>
+        <h2 class="h2">Five stages, one deal room</h2>
+        <p class="lede mt-6" style="margin-inline:auto">Every collaboration follows the same path,
+          so both sides always know where a campaign stands.</p>
+      </div>
+
+      <ol class="grid grid-3" style="margin-top:40px">
+        <li class="panel">
+          <span class="well" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>
+          </span>
+          <span class="flow-n mt-6">01</span>
+          <span class="flow-t">Brief</span>
+          <span class="flow-s">The restaurant describes the menu, the dates, the deliverables, and the budget range.</span>
+        </li>
+        <li class="panel">
+          <span class="well" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          </span>
+          <span class="flow-n mt-6">02</span>
+          <span class="flow-t">Match</span>
+          <span class="flow-s">Creators apply from the campaign page, and the restaurant shortlists who fits.</span>
+        </li>
+        <li class="panel">
+          <span class="well" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 12h8M12 8v8"/><circle cx="12" cy="12" r="9"/></svg>
+          </span>
+          <span class="flow-n mt-6">03</span>
+          <span class="flow-t">Negotiate</span>
+          <span class="flow-s">Offer and counter-offer settle the fee, scope, and shoot date before signing.</span>
+        </li>
+        <li class="panel">
+          <span class="well well-gold" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18"/></svg>
+          </span>
+          <span class="flow-n mt-6">04</span>
+          <span class="flow-t">Escrow</span>
+          <span class="flow-s">The restaurant funds escrow. The creator is paid only after the content is approved.</span>
+        </li>
+        <li class="panel">
+          <span class="well" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m13 2-4 11h7l-3 9 4-12h-7l3-8Z"/></svg>
+          </span>
+          <span class="flow-n mt-6">05</span>
+          <span class="flow-t">Deliver</span>
+          <span class="flow-s">The creator delivers through the platform, and both sides confirm to release payment.</span>
+        </li>
+        <li class="panel" style="background:transparent;border-style:dashed">
+          <span class="well well-line" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10.5" width="16" height="10" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg>
+          </span>
+          <span class="flow-n mt-6">Throughout</span>
+          <span class="flow-t">Contact stays masked</span>
+          <span class="flow-s">Phone, email, and handles unlock only after the contract is accepted.</span>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ==================================================== two sides -->
+  <section class="section">
+    <div class="wrap">
+      <div class="sec-head center">
+        <span class="eyebrow eyebrow-gold">Two different needs</span>
+        <h2 class="h2">One standard of work</h2>
+      </div>
+
+      <div class="grid grid-2 mt-8" style="margin-top:40px">
+        <div class="plan">
+          <span class="well" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V9l5-3 5 3v12M15 21V12l4 2v7"/><path d="M8 12h.01M8 16h.01M12 12h.01M12 16h.01"/></svg>
+          </span>
+          <h3 class="h3 mt-6">For restaurants</h3>
+          <p class="side-s mt-6" style="max-width:32rem">You need food that looks as good on the feed as it does on the plate, shot by someone who already knows your menu.</p>
+          <div class="mt-8">
+            <a class="btn btn-ghost btn-block" href="discover-creators.html">Discover creators</a>
+            <a class="btn btn-quiet btn-block mt-6" href="restaurant-dashboard.html">Restaurant dashboard</a>
+          </div>
+        </div>
+
+        <div class="plan plan-hero">
+          <span class="tag tag-gold plan-badge">For creators</span>
+          <span class="well well-gold" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 5.2a3.5 3.5 0 0 1 0 5.6M18 20a6 6 0 0 0-3-5.2"/></svg>
+          </span>
+          <h3 class="h3 mt-6">For food creators</h3>
+          <p class="side-s mt-6" style="max-width:32rem">You need paid brand work that respects your rate, your schedule, and the fact that restaurants need content they can actually post.</p>
+          <div class="mt-8">
+            <a class="btn btn-primary btn-block" href="discover-restaurants.html">Browse campaigns</a>
+            <a class="btn btn-quiet btn-block mt-6" href="influencer-dashboard.html">Creator dashboard</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====================================== posted in the last 7 days ===== -->
+  <section class="section">
+    <div class="wrap">
+      <div class="sec-head between" style="flex-wrap: wrap; align-items: flex-end;">
+        <div>
+          <span class="eyebrow">Posted in the last 7 days</span>
+          <h2 class="h2">Campaigns going up right now</h2>
+          <p class="lede mt-6">Everything here was posted in the past week. The top lane is restaurant briefs looking for creators; the bottom lane is creator applications landing on them.</p>
+        </div>
+        <div class="row-wrap">
+          <button class="btn btn-ghost btn-sm" type="button" data-lanes-toggle aria-pressed="false">
+            <span data-lanes-toggle-label>Pause motion</span>
+          </button>
+          <a class="btn btn-primary btn-sm" href="discover-restaurants.html">Browse campaigns</a>
+        </div>
+      </div>
+
+      <div class="lanes" data-lanes>
+        <div class="lane-block">
+          <div class="lane-bar">
+            <span class="lane-label">Posted by restaurants</span>
+            <div class="lane-nav">
+              <button class="lane-btn" type="button" data-lane-step="prev" data-lane-target="rest" aria-label="Scroll restaurant campaigns left">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M15 18l-6-6 6-6"></path></svg>
+              </button>
+              <button class="lane-btn" type="button" data-lane-step="next" data-lane-target="rest" aria-label="Scroll restaurant campaigns right">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 18l6-6-6-6"></path></svg>
+              </button>
+            </div>
+          </div>
+          <div class="lane" data-lane="rest">
+            <div class="lane-track">
+            <div class="lane-set">
+              <a class="lane-card" href="campaign-detail.html">
+                <div class="media ratio-43" style="--od-ratio: 4 / 3;"><img class="od-media-cover" src="assets/media/dosa.jpg" width="1100" height="857" alt="Plated Japanese tasting menu at Sakura House"></div>
+                <div>
+                  <span class="tag tag-live">Open</span>
+                  <span class="lane-t">Weekend Japanese Experience</span>
+                  <span class="lane-s">Sakura House · Bandra West</span>
+                  <div class="lane-foot">
+                    <span><span class="lane-k">Budget</span><span class="lane-v">₹20K–₹50K</span></span>
+                    <span class="lane-s">3 applications</span>
+                  </div>
+                  <div class="lane-foot"><span class="lane-k">Posted</span><span class="lane-s">2h ago</span></div>
+                </div>
+              </a>
+              <a class="lane-card" href="campaign-detail.html">
+                <div class="media ratio-43" style="--od-ratio: 4 / 3;"><img class="od-media-cover" src="assets/media/biryani.jpg" width="1100" height="707" alt="Weekend biryani brunch platter"></div>
+                <div>
+                  <span class="tag tag-live">Open</span>
+                  <span class="lane-t">Monsoon Brunch Launch</span>
+                  <span class="lane-s">Bandra Social · Bandra West</span>
+                  <div class="lane-foot">
+                    <span><span class="lane-k">Budget</span><span class="lane-v">₹8K–₹18K</span></span>
+                    <span class="lane-s">2 applications</span>
+                  </div>
+                  <div class="lane-foot"><span class="lane-k">Posted</span><span class="lane-s">6h ago</span></div>
+                </div>
+              </a>
+              <a class="lane-card" href="campaign-detail.html">
+                <div class="media ratio-43" style="--od-ratio: 4 / 3;"><img class="od-media-cover" src="assets/media/gulabjamun.jpg" width="1100" height="733" alt="Dessert drop sweets laid out for a festive campaign"></div>
+                <div>
+                  <span class="tag tag-live">Open</span>
+                  <span class="lane-t">Dessert Drop — Diwali</span>
+                  <span class="lane-s">Kulfi &amp; Co · Andheri</span>
+                  <div class="lane-foot">
+                    <span><span class="lane-k">Budget</span><span class="lane-v">₹15K–₹30K</span></span>
+                    <span class="lane-s">4 applications</span>
+                  </div>
+                  <div class="lane-foot"><span class="lane-k">Posted</span><span class="lane-s">1 day ago</span></div>
+                </div>
+              </a>
+              <a class="lane-card" href="campaign-detail.html">
+                <div class="media ratio-43" style="--od-ratio: 4 / 3;"><img class="od-media-cover" src="assets/media/filtercoffee.jpg" width="1100" height="733" alt="Filter coffee and chai festival spread"></div>
+                <div>
+                  <span class="tag tag-live">Open</span>
+                  <span class="lane-t">Chai &amp; Filter Coffee Festival</span>
+                  <span class="lane-s">Tapri Mumbai · Lower Parel</span>
+                  <div class="lane-foot">
+                    <span><span class="lane-k">Budget</span><span class="lane-v">₹6K–₹14K</span></span>
+                    <span class="lane-s">5 applications</span>
+                  </div>
+                  <div class="lane-foot"><span class="lane-k">Posted</span><span class="lane-s">1 day ago</span></div>
+                </div>
+              </a>
+              <a class="lane-card" href="campaign-detail.html">
+                <div class="media ratio-43" style="--od-ratio: 4 / 3;"><img class="od-media-cover" src="assets/media/butterchicken.jpg" width="1100" height="733" alt="Chef tasting menu course being filmed"></div>
+                <div>
+                  <span class="tag tag-live">Open</span>
+                  <span class="lane-t">Tasting Menu Walkthrough</span>
+                  <span class="lane-s">Chef's Table Series · Lower Parel</span>
+                  <div class="lane-foot">
+                    <span><span class="lane-k">Budget</span><span class="lane-v">₹40K–₹90K</span></span>
+                    <span class="lane-s">1 application</span>
+                  </div>
+                  <div class="lane-foot"><span class="lane-k">Posted</span><span class="lane-s">2 days ago</span></div>
+                </div>
+              </a>
+              <a class="lane-card" href="campaign-detail.html">
+                <div class="media ratio-43" style="--od-ratio: 4 / 3;"><img class="od-media-cover" src="assets/media/chaat.jpg" width="1100" height="733" alt="Street food plates for a comfort food campaign"></div>
+                <div>
+                  <span class="tag tag-live">Open</span>
+                  <span class="lane-t">Comfort Food Sundays</span>
+                  <span class="lane-s">The Corner Seats · Dadar</span>
+                  <div class="lane-foot">
+                    <span><span class="lane-k">Budget</span><span class="lane-v">₹10K–₹22K</span></span>
+                    <span class="lane-s">6 applications</span>
+                  </div>
+                  <div class="lane-foot"><span class="lane-k">Posted</span><span class="lane-s">3 days ago</span></div>
+                </div>
+              </a>
+              <a class="lane-card" href="campaign-detail.html">
+                <div class="media ratio-43" style="--od-ratio: 4 / 3;"><img class="od-media-cover" src="assets/media/thali.jpg" width="1100" height="733" alt="Thali lunch spread for a launch campaign"></div>
+                <div>
+                  <span class="tag tag-live">Open</span>
+                  <span class="lane-t">Thali Lunch Launch</span>
+                  <span class="lane-s">Anand Rasoi · Chembur</span>
+                  <div class="lane-foot">
+                    <span><span class="lane-k">Budget</span><span class="lane-v">₹12K–₹28K</span></span>
+                    <span class="lane-s">2 applications</span>
+                  </div>
+                  <div class="lane-foot"><span class="lane-k">Posted</span><span class="lane-s">4 days ago</span></div>
+                </div>
+              </a>
+              <a class="lane-card" href="campaign-detail.html">
+                <div class="media ratio-43" style="--od-ratio: 4 / 3;"><img class="od-media-cover" src="assets/media/momos.jpg" width="1100" height="733" alt="Momos and mocktails evening menu"></div>
+                <div>
+                  <span class="tag tag-live">Open</span>
+                  <span class="lane-t">Momos &amp; Mocktails Night</span>
+                  <span class="lane-s">Wok Box · Powai</span>
+                  <div class="lane-foot">
+                    <span><span class="lane-k">Budget</span><span class="lane-v">₹9K–₹20K</span></span>
+                    <span class="lane-s">4 applications</span>
+                  </div>
+                  <div class="lane-foot"><span class="lane-k">Posted</span><span class="lane-s">6 days ago</span></div>
+                </div>
+              </a>
+            </div>
+            <div class="lane-set" aria-hidden="true">
+              <a class="lane-card" href="campaign-detail.html" tabindex="-1">
+                <div class="media ratio-43" style="--od-ratio: 4 / 3;"><img class="od-media-cover" src="assets/media/dosa.jpg" width="1100" height="857" alt=""></div>
+                <div>
+                  <span class="tag tag-live">Open</span>
+                  <span class="lane-t">Weekend Japanese Experience</span>
+                  <span class="lane-s">Sakura House · Bandra West</span>
+                  <div class="lane-foot">
+                    <span><span class="lane-k">Budget</span><span class="lane-v">₹20K–₹50K</span></span>
+                    <span class="lane-s">3 applications</span>
+                  </div>
+                  <div class="lane-foot"><span class="lane-k">Posted</span><span class="lane-s">2h ago</span></div>
+                </div>
+              </a>
+              <a class="lane-card" href="campaign-detail.html" tabindex="-1">
+                <div class="media ratio-43" style="--od-ratio: 4 / 3;"><img class="od-media-cover" src="assets/media/biryani.jpg" width="1100" height="707" alt=""></div>
+                <div>
+                  <span class="tag tag-live">Open</span>
+                  <span class="lane-t">Monsoon Brunch Launch</span>
+                  <span class="lane-s">Bandra Social · Bandra West</span>
+                  <div class="lane-foot">
+                    <span><span class="lane-k">Budget</span><span class="lane-v">₹8K–₹18K</span></span>
+                    <span class="lane-s">2 applications</span>
+                  </div>
+                  <div class="lane-foot"><span class="lane-k">Posted</span><span class="lane-s">6h ago</span></div>
+                </div>
+              </a>
+              <a class="lane-card" href="campaign-detail.html" tabindex="-1">
+                <div class="media ratio-43" style="--od-ratio: 4 / 3;"><img class="od-media-cover" src="assets/media/gulabjamun.jpg" width="1100" height="733" alt=""></div>
+                <div>
+                  <span class="tag tag-live">Open</span>
+                  <span class="lane-t">Dessert Drop — Diwali</span>
+                  <span class="lane-s">Kulfi &amp; Co · Andheri</span>
+                  <div class="lane-foot">
+                    <span><span class="lane-k">Budget</span><span class="lane-v">₹15K–₹30K</span></span>
+                    <span class="lane-s">4 applications</span>
+                  </div>
+                  <div class="lane-foot"><span class="lane-k">Posted</span><span class="lane-s">1 day ago</span></div>
+                </div>
+              </a>
+              <a class="lane-card" href="campaign-detail.html" tabindex="-1">
+                <div class="media ratio-43" style="--od-ratio: 4 / 3;"><img class="od-media-cover" src="assets/media/filtercoffee.jpg" width="1100" height="733" alt=""></div>
+                <div>
+                  <span class="tag tag-live">Open</span>
+                  <span class="lane-t">Chai &amp; Filter Coffee Festival</span>
+                  <span class="lane-s">Tapri Mumbai · Lower Parel</span>
+                  <div class="lane-foot">
+                    <span><span class="lane-k">Budget</span><span class="lane-v">₹6K–₹14K</span></span>
+                    <span class="lane-s">5 applications</span>
+                  </div>
+                  <div class="lane-foot"><span class="lane-k">Posted</span><span class="lane-s">1 day ago</span></div>
+                </div>
+              </a>
+              <a class="lane-card" href="campaign-detail.html" tabindex="-1">
+                <div class="media ratio-43" style="--od-ratio: 4 / 3;"><img class="od-media-cover" src="assets/media/butterchicken.jpg" width="1100" height="733" alt=""></div>
+                <div>
+                  <span class="tag tag-live">Open</span>
+                  <span class="lane-t">Tasting Menu Walkthrough</span>
+                  <span class="lane-s">Chef's Table Series · Lower Parel</span>
+                  <div class="lane-foot">
+                    <span><span class="lane-k">Budget</span><span class="lane-v">₹40K–₹90K</span></span>
+                    <span class="lane-s">1 application</span>
+                  </div>
+                  <div class="lane-foot"><span class="lane-k">Posted</span><span class="lane-s">2 days ago</span></div>
+                </div>
+              </a>
+              <a class="lane-card" href="campaign-detail.html" tabindex="-1">
+                <div class="media ratio-43" style="--od-ratio: 4 / 3;"><img class="od-media-cover" src="assets/media/chaat.jpg" width="1100" height="733" alt=""></div>
+                <div>
+                  <span class="tag tag-live">Open</span>
+                  <span class="lane-t">Comfort Food Sundays</span>
+                  <span class="lane-s">The Corner Seats · Dadar</span>
+                  <div class="lane-foot">
+                    <span><span class="lane-k">Budget</span><span class="lane-v">₹10K–₹22K</span></span>
+                    <span class="lane-s">6 applications</span>
+                  </div>
+                  <div class="lane-foot"><span class="lane-k">Posted</span><span class="lane-s">3 days ago</span></div>
+                </div>
+              </a>
+              <a class="lane-card" href="campaign-detail.html" tabindex="-1">
+                <div class="media ratio-43" style="--od-ratio: 4 / 3;"><img class="od-media-cover" src="assets/media/thali.jpg" width="1100" height="733" alt=""></div>
+                <div>
+                  <span class="tag tag-live">Open</span>
+                  <span class="lane-t">Thali Lunch Launch</span>
+                  <span class="lane-s">Anand Rasoi · Chembur</span>
+                  <div class="lane-foot">
+                    <span><span class="lane-k">Budget</span><span class="lane-v">₹12K–₹28K</span></span>
+                    <span class="lane-s">2 applications</span>
+                  </div>
+                  <div class="lane-foot"><span class="lane-k">Posted</span><span class="lane-s">4 days ago</span></div>
+                </div>
+              </a>
+              <a class="lane-card" href="campaign-detail.html" tabindex="-1">
+                <div class="media ratio-43" style="--od-ratio: 4 / 3;"><img class="od-media-cover" src="assets/media/momos.jpg" width="1100" height="733" alt=""></div>
+                <div>
+                  <span class="tag tag-live">Open</span>
+                  <span class="lane-t">Momos &amp; Mocktails Night</span>
+                  <span class="lane-s">Wok Box · Powai</span>
+                  <div class="lane-foot">
+                    <span><span class="lane-k">Budget</span><span class="lane-v">₹9K–₹20K</span></span>
+                    <span class="lane-s">4 applications</span>
+                  </div>
+                  <div class="lane-foot"><span class="lane-k">Posted</span><span class="lane-s">6 days ago</span></div>
+                </div>
+              </a>
+            </div>
+          </div>
+          </div>
+        </div>
+
+        <div class="lane-block">
+          <div class="lane-bar">
+            <span class="lane-label">Creators applying</span>
+            <div class="lane-nav">
+              <button class="lane-btn" type="button" data-lane-step="prev" data-lane-target="creator" aria-label="Scroll creator applications left">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M15 18l-6-6 6-6"></path></svg>
+              </button>
+              <button class="lane-btn" type="button" data-lane-step="next" data-lane-target="creator" aria-label="Scroll creator applications right">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 18l6-6-6-6"></path></svg>
+              </button>
+            </div>
+          </div>
+          <div class="lane lane-rev" data-lane="creator">
+            <div class="lane-track">
+            <div class="lane-set">
+              <a class="lane-card lane-card-app" href="discover-creators.html">
+                <span class="avatar avatar-line" aria-hidden="true">AN</span>
+                <div>
+                  <span class="tag">Applied 4h ago</span>
+                  <span class="lane-t">Creator Ananya</span>
+                  <span class="lane-s">Food creator · Mumbai</span>
+                  <div class="lane-foot">
+                    <span><span class="lane-k">Applied to</span><span class="lane-v">Weekend Japanese Experience</span></span>
+                  </div>
+                  <div class="lane-foot"><span class="lane-k">Asking</span><span class="lane-s">₹20,000</span></div>
+                </div>
+              </a>
+              <a class="lane-card lane-card-app" href="discover-creators.html">
+                <span class="avatar avatar-line" aria-hidden="true">SM</span>
+                <div>
+                  <span class="tag">Applied 5h ago</span>
+                  <span class="lane-t">Sana M.</span>
+                  <span class="lane-s">Desserts · Mumbai</span>
+                  <div class="lane-foot">
+                    <span><span class="lane-k">Applied to</span><span class="lane-v">Dessert Drop — Diwali</span></span>
+                  </div>
+                  <div class="lane-foot"><span class="lane-k">Asking</span><span class="lane-s">₹28,000</span></div>
+                </div>
+              </a>
+              <a class="lane-card lane-card-app" href="discover-creators.html">
+                <span class="avatar avatar-line" aria-hidden="true">PN</span>
+                <div>
+                  <span class="tag">Applied 2h ago</span>
+                  <span class="lane-t">Priya N.</span>
+                  <span class="lane-s">Brunch &amp; lifestyle · Mumbai</span>
+                  <div class="lane-foot">
+                    <span><span class="lane-k">Applied to</span><span class="lane-v">Monsoon Brunch Launch</span></span>
+                  </div>
+                  <div class="lane-foot"><span class="lane-k">Asking</span><span class="lane-s">₹12,000</span></div>
+                </div>
+              </a>
+              <a class="lane-card lane-card-app" href="discover-creators.html">
+                <span class="avatar avatar-line" aria-hidden="true">RV</span>
+                <div>
+                  <span class="tag">Applied 1 day ago</span>
+                  <span class="lane-t">Rahul V.</span>
+                  <span class="lane-s">Food creator · Mumbai</span>
+                  <div class="lane-foot">
+                    <span><span class="lane-k">Applied to</span><span class="lane-v">Tasting Menu Walkthrough</span></span>
+                  </div>
+                  <div class="lane-foot"><span class="lane-k">Asking</span><span class="lane-s">₹32,000</span></div>
+                </div>
+              </a>
+              <a class="lane-card lane-card-app" href="discover-creators.html">
+                <span class="avatar avatar-line" aria-hidden="true">MK</span>
+                <div>
+                  <span class="tag">Applied 3h ago</span>
+                  <span class="lane-t">Meera K.</span>
+                  <span class="lane-s">Desserts &amp; baking · Andheri</span>
+                  <div class="lane-foot">
+                    <span><span class="lane-k">Applied to</span><span class="lane-v">Dessert Drop — Diwali</span></span>
+                  </div>
+                  <div class="lane-foot"><span class="lane-k">Asking</span><span class="lane-s">₹30,000</span></div>
+                </div>
+              </a>
+              <a class="lane-card lane-card-app" href="discover-creators.html">
+                <span class="avatar avatar-line" aria-hidden="true">DR</span>
+                <div>
+                  <span class="tag">Applied 2 days ago</span>
+                  <span class="lane-t">Devika R.</span>
+                  <span class="lane-s">Food &amp; travel · Bandra</span>
+                  <div class="lane-foot">
+                    <span><span class="lane-k">Applied to</span><span class="lane-v">Comfort Food Sundays</span></span>
+                  </div>
+                  <div class="lane-foot"><span class="lane-k">Asking</span><span class="lane-s">₹16,500</span></div>
+                </div>
+              </a>
+              <a class="lane-card lane-card-app" href="discover-creators.html">
+                <span class="avatar avatar-line" aria-hidden="true">AS</span>
+                <div>
+                  <span class="tag">Applied 4 days ago</span>
+                  <span class="lane-t">Arjun S.</span>
+                  <span class="lane-s">Street food · Dadar</span>
+                  <div class="lane-foot">
+                    <span><span class="lane-k">Applied to</span><span class="lane-v">Thali Lunch Launch</span></span>
+                  </div>
+                  <div class="lane-foot"><span class="lane-k">Asking</span><span class="lane-s">₹19,000</span></div>
+                </div>
+              </a>
+              <a class="lane-card lane-card-app" href="discover-creators.html">
+                <span class="avatar avatar-line" aria-hidden="true">NJ</span>
+                <div>
+                  <span class="tag">Applied 6 days ago</span>
+                  <span class="lane-t">Neel Joshi</span>
+                  <span class="lane-s">Chai &amp; breakfast · Andheri</span>
+                  <div class="lane-foot">
+                    <span><span class="lane-k">Applied to</span><span class="lane-v">Chai &amp; Filter Coffee Festival</span></span>
+                  </div>
+                  <div class="lane-foot"><span class="lane-k">Asking</span><span class="lane-s">₹11,000</span></div>
+                </div>
+              </a>
+            </div>
+            <div class="lane-set" aria-hidden="true">
+              <a class="lane-card lane-card-app" href="discover-creators.html" tabindex="-1">
+                <span class="avatar avatar-line" aria-hidden="true">AN</span>
+                <div>
+                  <span class="tag">Applied 4h ago</span>
+                  <span class="lane-t">Creator Ananya</span>
+                  <span class="lane-s">Food creator · Mumbai</span>
+                  <div class="lane-foot">
+                    <span><span class="lane-k">Applied to</span><span class="lane-v">Weekend Japanese Experience</span></span>
+                  </div>
+                  <div class="lane-foot"><span class="lane-k">Asking</span><span class="lane-s">₹20,000</span></div>
+                </div>
+              </a>
+              <a class="lane-card lane-card-app" href="discover-creators.html" tabindex="-1">
+                <span class="avatar avatar-line" aria-hidden="true">SM</span>
+                <div>
+                  <span class="tag">Applied 5h ago</span>
+                  <span class="lane-t">Sana M.</span>
+                  <span class="lane-s">Desserts · Mumbai</span>
+                  <div class="lane-foot">
+                    <span><span class="lane-k">Applied to</span><span class="lane-v">Dessert Drop — Diwali</span></span>
+                  </div>
+                  <div class="lane-foot"><span class="lane-k">Asking</span><span class="lane-s">₹28,000</span></div>
+                </div>
+              </a>
+              <a class="lane-card lane-card-app" href="discover-creators.html" tabindex="-1">
+                <span class="avatar avatar-line" aria-hidden="true">PN</span>
+                <div>
+                  <span class="tag">Applied 2h ago</span>
+                  <span class="lane-t">Priya N.</span>
+                  <span class="lane-s">Brunch &amp; lifestyle · Mumbai</span>
+                  <div class="lane-foot">
+                    <span><span class="lane-k">Applied to</span><span class="lane-v">Monsoon Brunch Launch</span></span>
+                  </div>
+                  <div class="lane-foot"><span class="lane-k">Asking</span><span class="lane-s">₹12,000</span></div>
+                </div>
+              </a>
+              <a class="lane-card lane-card-app" href="discover-creators.html" tabindex="-1">
+                <span class="avatar avatar-line" aria-hidden="true">RV</span>
+                <div>
+                  <span class="tag">Applied 1 day ago</span>
+                  <span class="lane-t">Rahul V.</span>
+                  <span class="lane-s">Food creator · Mumbai</span>
+                  <div class="lane-foot">
+                    <span><span class="lane-k">Applied to</span><span class="lane-v">Tasting Menu Walkthrough</span></span>
+                  </div>
+                  <div class="lane-foot"><span class="lane-k">Asking</span><span class="lane-s">₹32,000</span></div>
+                </div>
+              </a>
+              <a class="lane-card lane-card-app" href="discover-creators.html" tabindex="-1">
+                <span class="avatar avatar-line" aria-hidden="true">MK</span>
+                <div>
+                  <span class="tag">Applied 3h ago</span>
+                  <span class="lane-t">Meera K.</span>
+                  <span class="lane-s">Desserts &amp; baking · Andheri</span>
+                  <div class="lane-foot">
+                    <span><span class="lane-k">Applied to</span><span class="lane-v">Dessert Drop — Diwali</span></span>
+                  </div>
+                  <div class="lane-foot"><span class="lane-k">Asking</span><span class="lane-s">₹30,000</span></div>
+                </div>
+              </a>
+              <a class="lane-card lane-card-app" href="discover-creators.html" tabindex="-1">
+                <span class="avatar avatar-line" aria-hidden="true">DR</span>
+                <div>
+                  <span class="tag">Applied 2 days ago</span>
+                  <span class="lane-t">Devika R.</span>
+                  <span class="lane-s">Food &amp; travel · Bandra</span>
+                  <div class="lane-foot">
+                    <span><span class="lane-k">Applied to</span><span class="lane-v">Comfort Food Sundays</span></span>
+                  </div>
+                  <div class="lane-foot"><span class="lane-k">Asking</span><span class="lane-s">₹16,500</span></div>
+                </div>
+              </a>
+              <a class="lane-card lane-card-app" href="discover-creators.html" tabindex="-1">
+                <span class="avatar avatar-line" aria-hidden="true">AS</span>
+                <div>
+                  <span class="tag">Applied 4 days ago</span>
+                  <span class="lane-t">Arjun S.</span>
+                  <span class="lane-s">Street food · Dadar</span>
+                  <div class="lane-foot">
+                    <span><span class="lane-k">Applied to</span><span class="lane-v">Thali Lunch Launch</span></span>
+                  </div>
+                  <div class="lane-foot"><span class="lane-k">Asking</span><span class="lane-s">₹19,000</span></div>
+                </div>
+              </a>
+              <a class="lane-card lane-card-app" href="discover-creators.html" tabindex="-1">
+                <span class="avatar avatar-line" aria-hidden="true">NJ</span>
+                <div>
+                  <span class="tag">Applied 6 days ago</span>
+                  <span class="lane-t">Neel Joshi</span>
+                  <span class="lane-s">Chai &amp; breakfast · Andheri</span>
+                  <div class="lane-foot">
+                    <span><span class="lane-k">Applied to</span><span class="lane-v">Chai &amp; Filter Coffee Festival</span></span>
+                  </div>
+                  <div class="lane-foot"><span class="lane-k">Asking</span><span class="lane-s">₹11,000</span></div>
+                </div>
+              </a>
+            </div>
+          </div>
+        </div>
+        </div>
+      </div>
+
+      <div class="row-wrap mt-8">
+        <a class="btn btn-primary" href="campaign-detail.html">Open the campaign</a>
+        <button class="btn btn-ghost" type="button" data-sheet="deal-room" data-deal-link="weekend-japanese">Open Deal Room</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================================================== testimonials -->
+  <section class="section">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">In their words</span>
+        <h2 class="h2">What each side says</h2>
+      </div>
+      <div class="grid grid-3 mt-8" style="margin-top:40px">
+        <div class="quote-card">
+          <span class="tag tag-red">Restaurant</span>
+          <p class="quote-s">“I posted the brief on a Monday and had three applications by Tuesday. We agreed the scope in the deal room and the content came back shootable.”</p>
+          <span class="quote-t mt-8">Sakura House</span>
+        </div>
+        <div class="quote-card">
+          <span class="tag tag-gold">Creator</span>
+          <p class="quote-s">“The budget range was on the page before I applied, and escrow meant I never had to chase an invoice after delivery.”</p>
+          <span class="quote-t mt-8">Creator Ananya</span>
+        </div>
+        <div class="quote-card">
+          <span class="tag">Both</span>
+          <p class="quote-s">“Negotiation, contract, and payment never left one page. Neither of us had to share a phone number to get a shoot done.”</p>
+          <span class="quote-t mt-8">The deal room</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================== faq -->
+  <section class="section">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">Things people ask</span>
+        <h2 class="h2">Before you start</h2>
+      </div>
+
+      <div class="faq mt-8" style="margin-top:40px">
+        <div class="faq-item" data-open="false">
+          <h3>
+            <button class="faq-q" type="button" aria-expanded="false">
+              <span>What exactly is CollabTable?</span>
+              <span class="faq-x" aria-hidden="true"></span>
+            </button>
+          </h3>
+          <div class="faq-a">
+            <p>It is a marketplace where restaurants post food-content campaigns and food creators apply.
+              Both sides agree terms in a shared deal room, and payment moves through escrow rather than directly.</p>
+          </div>
+        </div>
+        <div class="faq-item" data-open="false">
+          <h3>
+            <button class="faq-q" type="button" aria-expanded="false">
+              <span>How much does a campaign cost?</span>
+              <span class="faq-x" aria-hidden="true"></span>
+            </button>
+          </h3>
+          <div class="faq-a">
+            <p>It depends on the brief. Every campaign publishes a budget range — for example
+              ₹20K–₹50K — and the final figure is agreed between the restaurant and the creator in the deal room
+              before a contract is signed.</p>
+          </div>
+        </div>
+        <div class="faq-item" data-open="false">
+          <h3>
+            <button class="faq-q" type="button" aria-expanded="false">
+              <span>When does the creator get paid?</span>
+              <span class="faq-x" aria-hidden="true"></span>
+            </button>
+          </h3>
+          <div class="faq-a">
+            <p>After the contract is accepted, the restaurant funds escrow. The platform fee is deducted,
+              and the creator receives the net payout once the delivered content is approved and the review step is complete.</p>
+          </div>
+        </div>
+        <div class="faq-item" data-open="false">
+          <h3>
+            <button class="faq-q" type="button" aria-expanded="false">
+              <span>Can I contact a creator directly?</span>
+              <span class="faq-x" aria-hidden="true"></span>
+            </button>
+          </h3>
+          <div class="faq-a">
+            <p>Not before a deal is agreed. Phone numbers, emails, and handles are masked on both sides,
+              and they unlock only once the offer and contract are accepted in the deal room. This keeps the
+              campaign record complete and payment protected.</p>
+          </div>
+        </div>
+        <div class="faq-item" data-open="false">
+          <h3>
+            <button class="faq-q" type="button" aria-expanded="false">
+              <span>What happens if a deal falls through?</span>
+              <span class="faq-x" aria-hidden="true"></span>
+            </button>
+          </h3>
+          <div class="faq-a">
+            <p>If escrow has not been funded, nothing moves. If escrow was funded and the campaign stops,
+              the amount stays held until both sides confirm how it should be released.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================== cta -->
+  <section class="section">
+    <div class="wrap">
+      <div class="cta-band center">
+        <span class="eyebrow eyebrow-red">Ready when you are</span>
+        <h2 class="h2">Pick a side of the table</h2>
+        <p class="lede mt-6" style="margin-inline:auto">Set up your side first — it takes a couple of minutes
+          and it unlocks the right discovery and deal tools.</p>
+        <div class="row-wrap mt-8" style="justify-content:center">
+          <a class="btn btn-primary" href="restaurant-onboarding.html">I run a restaurant</a>
+          <a class="btn btn-ghost" href="influencer-onboarding.html">I'm a creator</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer-top">
+      <div style="max-width:280px">
+        <span class="brand"><span class="brand-a">COLLAB</span><span class="brand-b">TABLE</span></span>
+        <p class="side-s mt-6">Where restaurants meet the right creators.</p>
+      </div>
+      <div>
+        <span class="footer-h">Screens</span>
+        <a class="footer-link" href="signin.html">Sign in</a>
+        <a class="footer-link" href="index.html">All screens</a>
+        <a class="footer-link" href="landing.html">Overview</a>
+        <a class="footer-link" href="campaign-detail.html">Campaign detail</a>
+      </div>
+      <div>
+        <span class="footer-h">Marketplace</span>
+        <a class="footer-link" href="discover-creators.html">Discover creators</a>
+        <a class="footer-link" href="discover-restaurants.html">Discover campaigns</a>
+      </div>
+      <div>
+        <span class="footer-h">Deal flow</span>
+        <button class="footer-link" type="button" data-sheet="deal-room" data-deal-link="weekend-japanese">Deal Room</button>
+        <a class="footer-link" href="restaurant-dashboard.html">Restaurant dashboard</a>
+        <a class="footer-link" href="influencer-dashboard.html">Creator dashboard</a>
+      </div>
+    </div>
+    <div class="footer-btm">
+      <span>CollabTable prototype — editable HTML source.</span>
+      <span>All amounts in Indian rupees (₹).</span>
+    </div>
+  </div>
+</footer>
+
+<!-- ====================================================== deal room pop-up -->
+<!-- One centred pop-up, not a screen. The room is mounted from the shared deal
+     module in assets/app.js, so every surface opens the identical deal; this
+     element only says which side of the deal you are looking at. -->
+<div class="sheet sheet-deal" id="deal-room" role="dialog" aria-modal="true" tabindex="-1"
+     aria-labelledby="deal-room-t" aria-hidden="true"
+     data-deal data-deal-role="restaurant"></div>
+
+<div class="scrim" data-scrim></div>
+<script src="assets/app.js"></script>
+</body>
+</html>

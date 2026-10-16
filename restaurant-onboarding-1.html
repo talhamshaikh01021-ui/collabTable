@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<script>try{var ct=localStorage.getItem('ct-theme')||(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',ct);}catch(e){document.documentElement.setAttribute('data-theme','light');}</script>
+<title>CollabTable — Restaurant Onboarding</title>
+<style>
+  :root {
+    --bg:      oklch(97.5% 0.016 60);
+    --surface: oklch(100% 0 0);
+    --fg:      oklch(21% 0.035 300);
+    --muted:   oklch(52% 0.03 290);
+    --border:  oklch(90% 0.022 300);
+    --accent:  oklch(58% 0.19 304);
+    --good:    oklch(52% 0.13 152);
+    --accent-soft: color-mix(in oklch, var(--accent) 12%, transparent);
+    --on-solid:   oklch(100% 0 0);
+    --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+    --font-body:    -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+    --font-mono:    ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace;
+    --radius: 14px;
+    --radius-lg: 24px;
+  }
+  *,*::before,*::after{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;}
+  a{color:inherit;text-decoration:none;} button{font:inherit;cursor:pointer;} p{text-wrap:pretty;} h1,h2,h3{text-wrap:balance;}
+  .top{display:flex;align-items:center;justify-content:space-between;padding:14px 28px;border-bottom:1px solid var(--border);}
+  .logo{font-weight:700;font-size:17px;display:flex;align-items:center;gap:10px;}
+  .logo .mark{width:26px;height:26px;border-radius:8px;background:var(--accent);color:var(--on-solid);display:grid;place-items:center;font-family:var(--font-mono);font-size:13px;}
+  .wrap{max-width:820px;margin-inline:auto;padding:28px;}
+  .eyebrow{font-family:var(--font-mono);font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:var(--accent);margin:0 0 12px;}
+  h1{font-size:clamp(28px,3.4vw,36px);line-height:1.08;letter-spacing:-0.02em;margin:0;}
+  .lead{color:var(--muted);font-size:16px;margin:10px 0 0;}
+  .meta{font-family:var(--font-mono);font-size:12px;color:var(--muted);}
+  .num{font-family:var(--font-mono);font-variant-numeric:tabular-nums;}
+  .steps{display:flex;gap:8px;margin:28px 0 6px;}
+  .step{flex:1;display:flex;align-items:center;gap:8px;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius);font-size:12.5px;color:var(--muted);cursor:pointer;background:var(--surface);}
+  .step .dot{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-family:var(--font-mono);font-size:11px;border:1px solid var(--border);}
+  .step.active{border-color:var(--accent);color:var(--fg);}
+  .step.active .dot{background:var(--accent);border-color:var(--accent);color:var(--on-solid);}
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:32px;margin-top:20px;}
+  .step-panel.on{display:none;}
+  .field{display:flex;flex-direction:column;gap:6px;}
+  .field label{font-size:13px;color:var(--muted);}
+  .input,.select,.textarea{width:100%;padding:11px 14px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--fg);font:inherit;font-size:15px;}
+  .input:focus,.select:focus,.textarea:focus{outline:2px solid var(--accent-soft);border-color:var(--accent);}
+  .grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;}
+  @media(max-width:680px){.grid-2{grid-template-columns:1fr;}}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;}
+  .chip{padding:8px 14px;border:1px solid var(--border);border-radius:999px;font-size:13.5px;color:var(--fg);background:var(--surface);}
+  .chip.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);font-weight:600;}
+  .foot{display:flex;justify-content:space-between;align-items:center;margin-top:24px;gap:12px;}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:12px 20px;border-radius:var(--radius);border:1px solid transparent;font-size:15px;font-weight:600;transition:background .15s ease;text-decoration:none;}
+  .btn:active{transform:translateY(1px);}
+  .btn-primary{background:var(--accent);color:var(--on-solid);border-color:var(--accent);}
+  .btn-primary:hover{background:color-mix(in oklch,var(--accent) 86%,black);}
+  .btn-dark{background:var(--fg);color:var(--bg);border-color:var(--fg);}
+  .btn-dark:hover{background:color-mix(in oklch,var(--fg) 85%,white);}
+  .btn-outline{background:transparent;color:var(--fg);border-color:var(--border);}
+  .btn-outline:hover{border-color:var(--fg);}
+  .verify{display:flex;align-items:center;gap:14px;padding:14px 0;border-top:1px solid var(--border);}
+  .verify .ok{width:22px;height:22px;border-radius:50%;background:var(--good);color:var(--on-solid);display:grid;place-items:center;font-size:13px;font-family:var(--font-mono);}
+  .budget{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));}
+  .budget-opt{border:1px solid var(--border);border-radius:var(--radius);padding:18px;text-align:left;background:var(--surface);}
+  .budget-opt.on{border-color:var(--accent);background:var(--accent-soft);}
+  .budget-opt .amt{font-family:var(--font-mono);font-size:20px;font-weight:700;}
+  .budget-opt .lbl{color:var(--muted);font-size:12px;margin-top:4px;}
+</style>
+</head>
+<body>
+<div class="top">
+  <span class="logo"><span class="mark">C</span>CollabTable</span>
+  <a class="meta" href="index.html">← Prototype index</a>
+</div>
+
+<div class="wrap">
+  <p class="eyebrow">Restaurant Onboarding</p>
+  <h1>Set up your restaurant profile</h1>
+  <p class="lead">A few details to verify your business, then set your creator budget. Your direct phone and booking links stay private.</p>
+
+  <div class="steps" data-od-id="steps">
+    <div class="step" data-s="1"><span class="dot">1</span><span class="lbl">Business</span></div>
+    <div class="step" data-s="2"><span class="dot">2</span><span class="lbl">Type &amp; cuisine</span></div>
+    <div class="step" data-s="3"><span class="dot">3</span><span class="lbl">Verification</span></div>
+  </div>
+
+  <div class="panel step-panel on" data-p="1" data-od-id="step-business">
+    <h2 style="margin-bottom:20px;">Business details</h2>
+    <div class="grid-2">
+      <div class="field"><label>Restaurant name</label><input class="input" value="Sakura House" /></div>
+      <div class="field"><label>Brand / DA handle</label><input class="input" value="@sakurahouse.mum" /></div>
+      <div class="field"><label>City</label><select class="select"><option>Mumbai</option><option>Bengaluru</option><option>Delhi</option><option>Pune</option></select></div>
+      <div class="field"><label>Area / locality</label><input class="input" value="Bandra West" /></div>
+      <div class="field"><label>Cuisine</label><input class="input" value="Japanese" /></div>
+      <div class="field"><label>Cost for two (₹)</label><input class="input num" value="₹3,200" /></div>
+    </div>
+    <div class="foot">
+      <span class="meta">Step 1 of 3</span>
+      <button class="btn btn-primary" data-next="1">Continue</button>
+    </div>
+  </div>
+
+  <div class="panel step-panel" data-p="2" data-od-id="step-type">
+    <h2 style="margin-bottom:8px;">Restaurant type &amp; positioning</h2>
+    <div class="field" style="margin-top:20px;"><label>Category</label>
+      <div class="chips"><button type="button" class="chip">Casual</button><button type="button" class="chip">Premium</button><button type="button" class="chip on">Fine dining</button><button type="button" class="chip">Café</button><button type="button" class="chip">Bar</button><button type="button" class="chip">QSR</button><button type="button" class="chip">Cloud kitchen</button><button type="button" class="chip">Bakery</button><button type="button" class="chip">Dessert</button><button type="button" class="chip">Other</button></div></div>
+    <div class="grid-2" style="margin-top:24px;">
+      <div class="field"><label>Dietary &amp; service tags</label>
+        <div class="chips"><button type="button" class="chip on">Vegetarian options</button><button type="button" class="chip">Vegan</button><button type="button" class="chip">Halal</button><button type="button" class="chip">Family friendly</button><button type="button" class="chip">Pet friendly</button><button type="button" class="chip">Outdoor seating</button></div></div>
+      <div class="field"><label>Typical footfall day</label>
+        <select class="select"><option>Weekends</option><option>Weekdays</option><option>Both</option></select></div>
+    </div>
+    <div class="field" style="margin-top:20px;"><label>Short description for creators</label><textarea class="textarea">Modern Japanese fine-dining in Bandra — omakase tasting menus, weekend live-grill counter.</textarea></div>
+    <div class="foot">
+      <span class="meta">Step 2 of 3</span>
+      <button class="btn btn-primary" data-next="2">Continue</button>
+    </div>
+  </div>
+
+  <div class="panel step-panel" data-p="3" data-od-id="step-verify">
+    <h2 style="margin-bottom:8px;">Business verification</h2>
+    <p class="lead" style="font-size:14px;">We verify your business so creators can trust your campaigns and escrow payouts.</p>
+    <div class="verify"><span class="ok">✓</span><div style="flex:1;"><div style="font-weight:600;">GST / business documentation</div><div class="meta">27AABCS1234F1Z5 · uploaded</div></div><span class="meta" style="color:var(--good);">Verified</span></div>
+    <div class="verify"><span class="ok">✓</span><div style="flex:1;"><div style="font-weight:600;">FSSAI / restaurant licence</div><div class="meta">FSSAI 2152XXXXXXXX · uploaded</div></div><span class="meta" style="color:var(--good);">Verified</span></div>
+    <div class="verify"><span class="ok" style="background:var(--accent);">+</span><div style="flex:1;"><div style="font-weight:600;">Bank account verification</div><div class="meta">For escrow payouts</div></div><button class="btn btn-outline" style="padding:8px 14px;font-size:13px;">Connect</button></div>
+
+    <div class="rule" style="border-top:1px solid var(--border);margin:20px 0;"></div>
+    <h2 style="margin-bottom:14px;">Monthly influencer budget</h2>
+    <div class="budget">
+      <button type="button" class="budget-opt"><div class="amt">₹25K–₹50K</div><div class="lbl">Curated nights &amp; small launches</div></button>
+      <button type="button" class="budget-opt on"><div class="amt">₹50K–₹1L</div><div class="lbl">Weekly content + monthly event</div></button>
+      <button type="button" class="budget-opt"><div class="amt">₹1L–₹5L</div><div class="lbl">Ongoing creator program</div></button>
+      <button type="button" class="budget-opt"><div class="amt">₹5L+</div><div class="lbl">National / multi-city campaigns</div></button>
+    </div>
+    <div class="foot">
+      <span class="meta">Step 3 of 3</span>
+      <a class="btn btn-primary" href="restaurant-dashboard.html" style="text-decoration:none;">Finish → Go to dashboard</a>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('.chip').forEach(function(c){c.addEventListener('click',function(){c.classList.toggle('on');});});
+  document.querySelectorAll('.budget-opt').forEach(function(c){c.addEventListener('click',function(){document.querySelectorAll('.budget-opt').forEach(function(o){o.classList.remove('on');});c.classList.add('on');});});
+  document.querySelectorAll('[data-next]').forEach(function(b){b.addEventListener('click',function(){show(parseInt(b.getAttribute('data-next'),10)+1);});});
+  document.querySelectorAll('.step').forEach(function(s){s.addEventListener('click',function(){show(parseInt(s.getAttribute('data-s'),10));});});
+  function show(n){
+    document.querySelectorAll('.step-panel').forEach(function(p){p.classList.toggle('on',parseInt(p.getAttribute('data-p'),10)===n);});
+    document.querySelectorAll('.step').forEach(function(s){var sn=parseInt(s.getAttribute('data-s'),10);s.classList.toggle('active',sn===n);});
+  }
+  (function(){
+    function toast(msg){var t=document.getElementById('ctToast');if(!t){t=document.createElement('div');t.id='ctToast';t.style.cssText='position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:1200;background:var(--fg);color:var(--bg);padding:11px 18px;border-radius:999px;font-size:13px;font-family:var(--font-mono);box-shadow:0 6px 24px rgba(0,0,0,.18);opacity:0;transition:opacity .25s;';document.body.appendChild(t);}t.textContent=msg;t.style.opacity='1';clearTimeout(t._t);t._t=setTimeout(function(){t.style.opacity='0';},2400);}
+    var connectBtn=document.querySelector('.step-panel[data-p="3"] .verify .btn-outline');
+    if(connectBtn){
+      connectBtn.addEventListener('click',function(){
+        connectBtn.textContent='Connected ✓';
+        connectBtn.style.background='var(--good)';
+        connectBtn.style.color='var(--surface)';
+        connectBtn.style.borderColor='var(--good)';
+        var icon=connectBtn.closest('.verify').querySelector('.ok');
+        if(icon){icon.textContent='✓';icon.style.background='var(--good)';}
+        var status=connectBtn.closest('.verify').querySelector('.meta:last-child');
+        if(status){status.textContent='Verified';status.style.color='var(--good)';}
+        toast('Bank account verified — escrow payouts enabled.');
+      });
+    }
+    var finishBtn=document.querySelector('.step-panel[data-p="3"] .foot .btn-primary');
+    if(finishBtn){
+      finishBtn.addEventListener('click',function(e){e.preventDefault();toast('Onboarding complete — welcome to CollabTable!');setTimeout(function(){window.location.href='restaurant-dashboard.html';},800);});
+    }
+  })();
+</script>
+<style>
+  :root[data-theme="dark"]{
+    --bg:      oklch(18% 0.025 295);
+    --surface: oklch(24% 0.03 295);
+    --fg:      oklch(93% 0.02 60);
+    --muted:   oklch(66% 0.03 280);
+    --border:  oklch(34% 0.035 295);
+    --accent:  oklch(68% 0.16 304);
+    --good:    oklch(64% 0.14 152);
+    --warn:    oklch(72% 0.16 70);
+    --danger:  oklch(66% 0.18 28);
+    --accent-soft: color-mix(in oklch, var(--accent) 18%, transparent);
+    --fg-soft:     color-mix(in oklch, var(--fg) 7%, transparent);
+  }
+  .theme-toggle{
+    position:fixed;top:14px;right:14px;z-index:1000;
+    display:inline-flex;align-items:center;gap:8px;
+    padding:8px 13px;border:1px solid var(--border);border-radius:999px;
+    background:var(--surface);color:var(--fg);
+    font-family:var(--font-mono);font-size:12px;font-weight:600;
+    letter-spacing:.04em;text-transform:uppercase;cursor:pointer;
+    box-shadow:0 2px 14px color-mix(in oklch, var(--fg) 12%, transparent);
+  }
+  .theme-toggle:hover{background:var(--accent-soft);}
+</style>
+<button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle colour theme">
+  <span id="themeLabel">Dark</span>
+</button>
+<script>
+  (function(){
+    var root=document.documentElement;
+    function applyTheme(t){
+      root.setAttribute('data-theme',t);
+      try{localStorage.setItem('ct-theme',t);}catch(e){}
+      var lab=document.getElementById('themeLabel');
+      if(lab){lab.textContent=(t==='dark')?'Light':'Dark';}
+    }
+    try{
+      var saved=localStorage.getItem('ct-theme');
+      if(saved){applyTheme(saved);}
+      else if(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches){applyTheme('dark');}
+      else{applyTheme('light');}
+    }catch(e){applyTheme('light');}
+    var btn=document.getElementById('themeToggle');
+    if(btn){btn.addEventListener('click',function(){
+      applyTheme(root.getAttribute('data-theme')==='dark'?'light':'dark');
+    });}
+  })();
+</script>
+</body>
+
+</html>

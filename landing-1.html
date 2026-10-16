@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<script>try{var ct=localStorage.getItem('ct-theme')||(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',ct);}catch(e){document.documentElement.setAttribute('data-theme','light');}</script>
+<title>CollabTable — Where Restaurants Meet the Right Creators</title>
+<style>
+  :root {
+    --bg:      oklch(97.5% 0.016 60);
+    --surface: oklch(100% 0 0);
+    --fg:      oklch(21% 0.035 300);
+    --muted:   oklch(52% 0.03 290);
+    --border:  oklch(90% 0.022 300);
+    --accent:  oklch(58% 0.19 304);
+    --good:    oklch(52% 0.13 152);
+    --warn:    oklch(60% 0.16 70);
+    --danger:  oklch(52% 0.18 28);
+    --accent-soft: color-mix(in oklch, var(--accent) 12%, transparent);
+    --on-solid:   oklch(100% 0 0);
+    --fg-soft:     color-mix(in oklch, var(--fg) 5%, transparent);
+    --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+    --font-body:    -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+    --font-mono:    ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace;
+    --container: 1080px;
+    --gutter: 28px;
+    --radius: 14px;
+    --radius-lg: 24px;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font-family:var(--font-body); font-size:16px; line-height:1.55; -webkit-font-smoothing:antialiased; }
+  img,svg{display:block;max-width:100%;} a{color:inherit;text-decoration:none;} button{font:inherit;cursor:pointer;} p{text-wrap:pretty;} h1,h2,h3{text-wrap:balance;}
+  .container{max-width:var(--container);margin-inline:auto;padding-inline:var(--gutter);}
+  .section{padding-block:clamp(48px,7vw,88px);}
+  .section+.section{border-top:1px solid var(--border);}
+  .stack{display:flex;flex-direction:column;} .stack>*+*{margin-top:20px;}
+  .row{display:flex;align-items:center;gap:20px;} .row-between{display:flex;align-items:center;justify-content:space-between;gap:20px;}
+  .grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:32px;} .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;} .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
+  @media(max-width:920px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr;}}
+  h1{font-family:var(--font-display);font-size:clamp(44px,6vw,72px);line-height:1.02;letter-spacing:-0.03em;margin:0;}
+  h2{font-family:var(--font-display);font-size:clamp(30px,3.6vw,42px);line-height:1.08;letter-spacing:-0.02em;margin:0;}
+  h3{font-size:20px;font-weight:650;letter-spacing:-0.01em;margin:0;}
+  .lead{color:var(--muted);font-size:19px;max-width:56ch;margin:0;}
+  .eyebrow{font-family:var(--font-mono);font-size:12px;letter-spacing:0.09em;text-transform:uppercase;color:var(--accent);margin:0 0 14px;}
+  .meta{font-family:var(--font-mono);font-size:12px;color:var(--muted);}
+  .num{font-family:var(--font-mono);font-variant-numeric:tabular-nums;}
+  .topnav{position:sticky;top:0;z-index:10;background:color-mix(in oklch,var(--bg) 90%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);}
+  .topnav-inner{display:flex;align-items:center;justify-content:space-between;padding-block:14px;}
+  .logo{font-weight:700;font-size:18px;letter-spacing:-0.02em;display:flex;align-items:center;gap:10px;}
+  .logo .mark{width:26px;height:26px;border-radius:8px;background:var(--accent);color:var(--on-solid);display:grid;place-items:center;font-family:var(--font-mono);font-size:13px;}
+  .topnav nav{display:flex;gap:24px;} .topnav nav a{font-size:14px;color:var(--muted);} .topnav nav a:hover{color:var(--fg);}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 22px;border-radius:var(--radius);border:1px solid transparent;font-size:15px;font-weight:600;letter-spacing:-0.005em;transition:background .15s ease,border-color .15s ease,transform .05s ease;}
+  .btn:active{transform:translateY(1px);}
+  .btn-lg{padding:16px 26px;font-size:16px;}
+  .btn-primary{background:var(--accent);color:var(--on-solid);border-color:var(--accent);}
+  .btn-primary:hover{background:color-mix(in oklch,var(--accent) 86%,black);}
+  .btn-dark{background:var(--fg);color:var(--bg);border-color:var(--fg);}
+  .btn-dark:hover{background:color-mix(in oklch,var(--fg) 85%,white);}
+  .btn-outline{background:transparent;color:var(--fg);border-color:var(--border);}
+  .btn-outline:hover{border-color:var(--fg);}
+  .btn-ghost{background:transparent;color:var(--fg);border-color:transparent;padding-inline:8px;font-weight:500;}
+  .btn-ghost:hover{color:var(--accent);}
+  .hero{padding-block:clamp(72px,10vw,120px);}
+  .hero-cta{display:flex;gap:14px;flex-wrap:wrap;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;}
+  .feature .mark{width:36px;height:36px;display:grid;place-items:center;border:1px solid var(--border);border-radius:10px;color:var(--accent);margin-bottom:16px;}
+  .feature .mark svg{width:18px;height:18px;} .feature p{color:var(--muted);font-size:15px;margin:6px 0 0;}
+  .stat .stat-num{font-family:var(--font-display);font-size:clamp(44px,6vw,64px);line-height:1;letter-spacing:-0.03em;font-weight:700;color:var(--accent);}
+  .stat .stat-label{color:var(--muted);font-size:14px;margin-top:8px;}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;background:var(--accent-soft);color:var(--accent);border-radius:999px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.05em;text-transform:uppercase;}
+  .tag{display:inline-flex;align-items:center;padding:4px 10px;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:999px;font-size:12px;}
+  .rule{border:0;border-top:1px solid var(--border);margin:0;}
+  .ph-img{background:linear-gradient(135deg,var(--accent-soft),var(--fg-soft)),var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);aspect-ratio:16/10;display:grid;place-items:center;color:var(--muted);font-family:var(--font-mono);font-size:12px;}
+  .ph-img.wide{aspect-ratio:16/9;}
+  .step{display:flex;gap:18px;} .step .idx{font-family:var(--font-mono);font-size:13px;color:var(--accent);min-width:30px;padding-top:2px;}
+  .pagefoot{padding-block:40px;color:var(--muted);font-size:13px;border-top:1px solid var(--border);}
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center;}
+  @media(max-width:920px){.split{grid-template-columns:1fr;}}
+  .sec-sep{width:1px;align-self:stretch;background:var(--border);}
+  @media(max-width:920px){.sec-sep{display:none;}}
+</style>
+</head>
+<body>
+<header class="topnav" data-od-id="topnav">
+  <div class="container topnav-inner">
+    <span class="logo"><span class="mark">C</span>CollabTable</span>
+    <nav>
+      <a href="#how">How it works</a>
+      <a href="#protect">Safety</a>
+      <a href="#roles">For creators</a>
+    </nav>
+    <a class="btn btn-ghost" href="#">Login</a>
+  </div>
+</header>
+
+<main id="content">
+  <section class="section hero" data-od-id="hero">
+    <div class="container" style="text-align:center;max-width:760px;margin-inline:auto;">
+      <p class="eyebrow">Restaurant × Creator Marketplace</p>
+      <h1>Where Restaurants Meet the Right Creators.</h1>
+      <p class="lead" style="margin:20px auto 32px;">Discover, collaborate, manage campaigns and pay — all in one place. No WhatsApp threads, no manual Instagram hunts, no uncertain payments.</p>
+      <div class="hero-cta" style="justify-content:center;">
+        <a class="btn btn-primary btn-lg" href="influencer-onboarding.html">I'm an Influencer</a>
+        <a class="btn btn-dark btn-lg" href="restaurant-onboarding.html">I'm a Restaurant</a>
+        <a class="btn btn-ghost" href="#">Login</a>
+      </div>
+      <p class="meta" style="margin-top:24px;">Free for creators · initiatives span Mumbai to Bengaluru · payments protected by escrow</p>
+    </div>
+  </section>
+
+  <section class="section" data-od-id="features" style="border-top:1px solid var(--border);">
+    <div class="container stack" style="gap:48px;">
+      <div style="max-width:42ch;">
+        <p class="eyebrow">Why CollabTable</p>
+        <h2>Discovery with real structure — and real protection.</h2>
+      </div>
+      <div class="grid-3">
+        <div class="feature card">
+          <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div>
+          <h3>Discover the right match</h3>
+          <p>Search restaurants and creators by location, cuisine, budget, audience and niche — or let AI match you from your brief.</p>
+        </div>
+        <div class="feature card">
+          <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3v4m0 10v4M3 12h4m10 0h4"/><circle cx="12" cy="12" r="3"/></svg></div>
+          <h3>Secure contact, always</h3>
+          <p>Messages and deals happen in-platform. Phone numbers, emails and handles are intercepted before either side sees them.</p>
+        </div>
+        <div class="feature card">
+          <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3v18M3 12h18"/></svg></div>
+          <h3>Escrow-protected payouts</h3>
+          <p>Fund a campaign, get paid after milestone approval. Both sides are covered by a structured, traceable flow.</p>
+        </div>
+        <div class="feature card">
+          <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 7h16M4 12h10M4 17h16"/></svg></div>
+          <h3>Structured collaboration</h3>
+          <p>From offer to counter-offer to a signed agreement, every step is defined — no more scattered WhatsApp negotiations.</p>
+        </div>
+        <div class="feature card">
+          <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 8v4l3 2"/><circle cx="12" cy="12" r="8"/></svg></div>
+          <h3>Track performance</h3>
+          <p>Follow campaign status, deliverables and approvals in one live deal room per collaboration.</p>
+        </div>
+        <div class="feature card">
+          <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 17l5-5 4 4 7-8"/></svg></div>
+          <h3>Verified reviews</h3>
+          <p>Both sides review only after a completed collaboration, so ratings reflect real work.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" data-od-id="stats">
+    <div class="container">
+      <p class="eyebrow" style="margin-bottom:40px;">Two-sided by design · 2026</p>
+      <div class="grid-3">
+        <div class="stat"><div class="stat-num num">2<span class="stat-unit" style="font-size:0.5em;opacity:.6;">sides</span></div><p class="stat-label">Restaurants publish campaigns; creators apply, negotiate and deliver — both inside one closed loop.</p></div>
+        <div class="stat"><div class="stat-num num">0<span class="stat-unit" style="font-size:0.5em;opacity:.6;">contact</span></div><p class="stat-label">Phone numbers, emails and handles aren't surfaced. The message safety layer blocks them before delivery.</p></div>
+        <div class="stat"><div class="stat-num num">3<span class="stat-unit" style="font-size:0.5em;opacity:.6;">steps</span></div><p class="stat-label">Discover → Negotiate &amp; contract → Pay, deliver &amp; review. A clear path end to end.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" data-od-id="how" id="how">
+    <div class="container">
+      <div class="row-between" style="margin-bottom:44px;">
+        <div><p class="eyebrow">The Flow</p><h2>How a collaboration happens</h2></div>
+      </div>
+      <div class="grid-2">
+        <div class="stack" style="gap:28px;">
+          <div class="step"><span class="idx">01</span><div><h3>Discover</h3><p style="color:var(--muted);margin:6px 0 0;">Restaurants publish campaigns and shortlist creators; creators search campaigns or get invited. Identities stay masked — no direct contact.</p></div></div>
+          <div class="step"><span class="idx">02</span><div><h3>Negotiate &amp; contract</h3><p style="color:var(--muted);margin:6px 0 0;">Structured offers and counter-offers replace open chat. Once agreed, an agreement is generated and signed by both parties in-platform.</p></div></div>
+          <div class="step"><span class="idx">03</span><div><h3>Pay, deliver &amp; review</h3><p style="color:var(--muted);margin:6px 0 0;">Restaurant funds the deal, creator delivers, restaurant approves, funds release. Both sides leave a verified review.</p></div></div>
+        </div>
+        <div class="card" style="padding:20px;">
+          <div class="split" style="grid-template-columns:1fr auto 1fr;gap:28px;display:grid;">
+            <div>
+              <p class="eyebrow" style="margin-bottom:10px;">Restaurant</p>
+              <div style="font-size:13px;line-height:2;color:var(--fg);">
+                <div>Discover → Invite</div><div>→ Negotiate</div><div>→ Contract</div><div>→ Pay</div><div>→ Campaign</div><div>→ Verify</div><div>→ Review</div>
+              </div>
+            </div>
+            <div class="sec-sep"></div>
+            <div>
+              <p class="eyebrow" style="margin-bottom:10px;">Influencer</p>
+              <div style="font-size:13px;line-height:2;color:var(--fg);">
+                <div>Discover → Apply</div><div>→ Negotiate</div><div>→ Contract</div><div>→ Complete</div><div>→ Get paid</div><div>→ Review</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" data-od-id="protect" id="protect">
+    <div class="container">
+      <div style="max-width:46ch;margin-bottom:40px;">
+        <p class="eyebrow">Message Safety Layer</p>
+        <h2>We keep the conversation on CollabTable.</h2>
+        <p class="lead" style="font-size:17px;margin-top:12px;">Every message passes a moderation layer that catches PII, social handles and URLs before the other party sees them.</p>
+      </div>
+      <div class="card" style="background:var(--surface);">
+        <div class="row-between" style="margin-bottom:16px;"><span class="meta">BLOCKED · WOULD-BE SHARED CONTACT</span><span class="pill">Auto-replaced</span></div>
+        <div class="ph-img wide" style="aspect-ratio:auto;min-height:120px;justify-content:flex-start;padding:24px;text-align:left;background:var(--accent-soft);border:1px solid var(--accent);color:var(--fg);font-family:var(--font-body);font-size:15px;">
+          <div>
+            <div style="color:var(--muted);font-size:12px;margin-bottom:6px;">Creator tried to send</div>
+            <div style="font-weight:600;letter-spacing:-0.01em;">"WhatsApp me at 98201 45678"</div>
+            <div class="rule" style="margin:18px 0;"></div>
+            <div style="color:var(--muted);font-size:12px;margin-bottom:6px;">CollabTable delivered instead</div>
+            <div style="font-weight:600;color:var(--accent);">⚠️ For your security, direct contact information cannot be shared. Please continue the conversation through CollabTable.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" data-od-id="roles" id="roles" style="border-top:1px solid var(--border);">
+    <div class="container">
+      <p class="eyebrow" style="margin-bottom:36px;">Who it's for</p>
+      <div class="grid-2">
+        <div class="card">
+          <h3>For creators</h3>
+          <p style="color:var(--muted);margin:10px 0 20px;">Showcase your audience and pricing, get discovered and invited, and get paid on time.</p>
+          <ul style="list-style:none;padding:0;margin:0 0 24px;font-size:14.5px;color:var(--fg);">
+            <li style="display:flex;gap:10px;padding:7px 0;">· Discover paid &amp; complimentary campaigns by cuisine, budget and date</li>
+            <li style="display:flex;gap:10px;padding:7px 0;">· Set your own pricing per deliverable, negotiable or fixed</li>
+            <li style="display:flex;gap:10px;padding:7px 0;">· Escrow-protected earnings, released after approval</li>
+          </ul>
+          <a class="btn btn-primary" href="influencer-onboarding.html">Join as an Influencer</a>
+        </div>
+        <div class="card">
+          <h3>For restaurants</h3>
+          <p style="color:var(--muted);margin:10px 0 20px;">Find the right creators for footfall, launches and campaigns — without a manual Instagram hunt.</p>
+          <ul style="list-style:none;padding:0;margin:0 0 24px;font-size:14.5px;color:var(--fg);">
+            <li style="display:flex;gap:10px;padding:7px 0;">· Filter creators by audience, engagement, location and budget</li>
+            <li style="display:flex;gap:10px;padding:7px 0;">· Run structured offers, counter-offers and signed agreements</li>
+            <li style="display:flex;gap:10px;padding:7px 0;">· Fund campaigns in escrow — release only after you approve content</li>
+          </ul>
+          <a class="btn btn-dark" href="restaurant-onboarding.html">Join as a Restaurant</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" data-od-id="cta-strip" style="text-align:center;">
+    <div class="container" style="max-width:600px;">
+      <h2>Start your first collaboration.</h2>
+      <p class="lead" style="margin:16px auto 32px;">Free for creators. Restaurants pay per completed, approved campaign — no booking fee, no uncertainty.</p>
+      <div class="hero-cta" style="justify-content:center;">
+        <a class="btn btn-primary btn-lg" href="influencer-onboarding.html">I'm an Influencer</a>
+        <a class="btn btn-outline btn-lg" href="restaurant-onboarding.html">I'm a Restaurant</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="pagefoot" data-od-id="footer">
+  <div class="container row-between">
+    <span>© 2026 CollabTable · Working prototype</span>
+    <span class="meta">Contact details never surfaced · payments protected</span>
+  </div>
+</footer>
+<style>
+  html{scroll-behavior:smooth;}
+  @keyframes ctRise{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:none;}}
+  .ct-reveal{gap:0;} .ct-reveal>*{animation:ctRise .6s ease both;}
+  .ct-reveal>*:nth-child(2){animation-delay:.08s;}
+  .ct-reveal>*:nth-child(3){animation-delay:.16s;}
+  .ct-reveal>*:nth-child(4){animation-delay:.24s;}
+  .ct-reveal>*:nth-child(5){animation-delay:.32s;}
+  .ct-reveal>*:nth-child(6){animation-delay:.4s;}
+</style>
+<script>
+  (function(){
+    function toast(msg){var t=document.getElementById('ctToast');if(!t){t=document.createElement('div');t.id='ctToast';t.style.cssText='position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:1200;background:var(--fg);color:var(--bg);padding:11px 18px;border-radius:999px;font-size:13px;font-family:var(--font-mono);box-shadow:0 6px 24px rgba(0,0,0,.18);opacity:0;transition:opacity .25s;';document.body.appendChild(t);}t.textContent=msg;t.style.opacity='1';clearTimeout(t._t);t._t=setTimeout(function(){t.style.opacity='0';},2400);}
+    if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches){/* skip reveals */}
+    else{
+      var grids=document.querySelectorAll('.grid-3');
+      grids.forEach(function(g){g.classList.add('ct-reveal');});
+    }
+    document.addEventListener('click',function(e){
+      var login=e.target.closest('a[href="#"]');
+      if(login&&login.textContent.indexOf('Login')>=0){e.preventDefault();toast('Prototype — authentication isn’t part of the flow yet.');}
+    });
+    document.querySelectorAll('nav a[href^="#"], .topnav a[href="#"]').forEach(function(a){
+      a.addEventListener('click',function(ev){var id=a.getAttribute('href');if(id.length>1&&document.querySelector(id)){ev.preventDefault();document.querySelector(id).scrollIntoView({behavior:'smooth'});}});
+    });
+  })();
+</script>
+<style>
+  :root[data-theme="dark"]{
+    --bg:      oklch(18% 0.025 295);
+    --surface: oklch(24% 0.03 295);
+    --fg:      oklch(93% 0.02 60);
+    --muted:   oklch(66% 0.03 280);
+    --border:  oklch(34% 0.035 295);
+    --accent:  oklch(68% 0.16 304);
+    --good:    oklch(64% 0.14 152);
+    --warn:    oklch(72% 0.16 70);
+    --danger:  oklch(66% 0.18 28);
+    --accent-soft: color-mix(in oklch, var(--accent) 18%, transparent);
+    --fg-soft:     color-mix(in oklch, var(--fg) 7%, transparent);
+  }
+  .theme-toggle{
+    position:fixed;top:14px;right:14px;z-index:1000;
+    display:inline-flex;align-items:center;gap:8px;
+    padding:8px 13px;border:1px solid var(--border);border-radius:999px;
+    background:var(--surface);color:var(--fg);
+    font-family:var(--font-mono);font-size:12px;font-weight:600;
+    letter-spacing:.04em;text-transform:uppercase;cursor:pointer;
+    box-shadow:0 2px 14px color-mix(in oklch, var(--fg) 12%, transparent);
+  }
+  .theme-toggle:hover{background:var(--accent-soft);}
+</style>
+<button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle colour theme">
+  <span id="themeLabel">Dark</span>
+</button>
+<script>
+  (function(){
+    var root=document.documentElement;
+    function applyTheme(t){
+      root.setAttribute('data-theme',t);
+      try{localStorage.setItem('ct-theme',t);}catch(e){}
+      var lab=document.getElementById('themeLabel');
+      if(lab){lab.textContent=(t==='dark')?'Light':'Dark';}
+    }
+    try{
+      var saved=localStorage.getItem('ct-theme');
+      if(saved){applyTheme(saved);}
+      else if(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches){applyTheme('dark');}
+      else{applyTheme('light');}
+    }catch(e){applyTheme('light');}
+    var btn=document.getElementById('themeToggle');
+    if(btn){btn.addEventListener('click',function(){
+      applyTheme(root.getAttribute('data-theme')==='dark'?'light':'dark');
+    });}
+  })();
+</script>
+</body>
+
+</html>

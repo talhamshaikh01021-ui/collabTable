@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<script>try{var ct=localStorage.getItem('ct-theme')||(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',ct);}catch(e){document.documentElement.setAttribute('data-theme','light');}</script>
+<title>CollabTable — Prototype Screens</title>
+<style>
+  :root {
+    --bg:      oklch(97.5% 0.016 60);
+    --surface: oklch(100% 0 0);
+    --fg:      oklch(21% 0.035 300);
+    --muted:   oklch(52% 0.03 290);
+    --border:  oklch(90% 0.022 300);
+    --accent:  oklch(58% 0.19 304);
+    --good:    oklch(52% 0.13 152);
+    --warn:    oklch(60% 0.16 70);
+    --danger:  oklch(52% 0.18 28);
+    --accent-soft: color-mix(in oklch, var(--accent) 12%, transparent);
+    --on-solid:   oklch(100% 0 0);
+    --fg-soft:     color-mix(in oklch, var(--fg) 5%, transparent);
+    --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+    --font-body:    -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+    --font-mono:    ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace;
+    --container: 1080px;
+    --gutter: 28px;
+    --radius: 14px;
+    --radius-lg: 24px;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  body { margin:0; background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+  a { color: inherit; text-decoration: none; }
+  .container { max-width: var(--container); margin-inline: auto; padding-inline: var(--gutter); }
+  .topnav { position: sticky; top:0; z-index:10; background: color-mix(in oklch, var(--bg) 90%, transparent); backdrop-filter: blur(12px); border-bottom:1px solid var(--border); }
+  .topnav-inner { display:flex; align-items:center; justify-content:space-between; padding-block:14px; }
+  .logo { font-weight:700; font-size:18px; letter-spacing:-0.02em; display:flex; align-items:center; gap:10px; }
+  .logo .mark { width:26px; height:26px; border-radius:8px; background:var(--accent); color:var(--on-solid); display:grid; place-items:center; font-family:var(--font-mono); font-size:13px; }
+  .eyebrow { font-family:var(--font-mono); font-size:12px; letter-spacing:0.08em; text-transform:uppercase; color:var(--accent); margin:0 0 14px; }
+  h1 { font-family:var(--font-display); font-size:clamp(34px,4.5vw,52px); line-height:1.05; letter-spacing:-0.025em; margin:0; }
+  h2 { font-size:26px; letter-spacing:-0.015em; margin:0 0 6px; }
+  .lead { color:var(--muted); font-size:17px; max-width:56ch; }
+  .section { padding-block: clamp(44px,6vw,72px); }
+  .meta { font-family:var(--font-mono); font-size:12px; color:var(--muted); }
+  .num { font-family:var(--font-mono); font-variant-numeric:tabular-nums; }
+  .grid { display:grid; gap:20px; }
+  .grid-nav { grid-template-columns: repeat(3,1fr); }
+  @media (max-width:920px){ .grid-nav{grid-template-columns:1fr;} }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:22px; }
+  .nv { margin-top:6px; color:var(--muted); font-size:14px; }
+  .tag { display:inline-flex; padding:3px 10px; border:1px solid var(--border); border-radius:999px; font-size:12px; color:var(--muted); font-family:var(--font-mono); text-transform:uppercase; letter-spacing:0.03em; }
+  .arrow { font-family:var(--font-mono); color:var(--accent); font-size:14px; }
+</style>
+</head>
+<body>
+<header class="topnav"><div class="container topnav-inner">
+  <span class="logo"><span class="mark">C</span>CollabTable</span>
+  <span class="meta">Prototype · 2026</span>
+</div></header>
+
+<main id="content">
+  <section class="section" data-od-id="launcher-hero">
+    <div class="container">
+      <p class="eyebrow">Product Prototype · Screen Index</p>
+      <h1>Where restaurants meet the<br />right creators.</h1>
+      <p class="lead" style="margin-top:16px;">A closed two-sided marketplace for restaurant × influencer collaborations — discovery, negotiation, contracts, escrow payments and performance, with contact details always kept off-platform.</p>
+    </div>
+  </section>
+
+  <section class="section" data-od-id="flow">
+    <div class="container">
+      <p class="eyebrow" style="margin-bottom:24px;">The Core Flow</p>
+      <div class="grid grid-nav">
+        <div class="card"><div class="num" style="color:var(--accent);font-size:13px;">01</div><h2 style="margin-top:10px;">Discover</h2><p class="nv">AI match &amp; filtered search on both sides. Identities are masked — no phone, no email, no clickable handles.</p></div>
+        <div class="card"><div class="num" style="color:var(--accent);font-size:13px;">02</div><h2 style="margin-top:10px;">Negotiate &amp; Contract</h2><p class="nv">Structured offers, counter-offers, and an auto-generated agreement signed in-platform.</p></div>
+        <div class="card"><div class="num" style="color:var(--accent);font-size:13px;">03</div><h2 style="margin-top:10px;">Pay, Deliver, Review</h2><p class="nv">Escrow-protected payments, in-app messaging with contact interception, and verified reviews.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" data-od-id="screens" style="border-top:1px solid var(--border);">
+    <div class="container">
+      <p class="eyebrow" style="margin-bottom:24px;">Screens</p>
+      <div class="grid grid-nav">
+        <a class="card" href="landing.html"><h2 style="font-size:18px;">Landing page <span class="arrow">→</span></h2><p class="nv">Hero, value props, how it works, roles</p><span class="tag" style="margin-top:12px;">Marketing</span></a>
+        <a class="card" href="influencer-onboarding.html"><h2 style="font-size:18px;">Influencer onboarding <span class="arrow">→</span></h2><p class="nv">Basic info · social verify · preferences · pricing · availability</p><span class="tag" style="margin-top:12px;">Flow</span></a>
+        <a class="card" href="restaurant-onboarding.html"><h2 style="font-size:18px;">Restaurant onboarding <span class="arrow">→</span></h2><p class="nv">Details · verification · budget</p><span class="tag" style="margin-top:12px;">Flow</span></a>
+        <a class="card" href="restaurant-dashboard.html"><h2 style="font-size:18px;">Restaurant dashboard <span class="arrow">→</span></h2><p class="nv">Campaigns · budget · recommended creators · active campaigns</p><span class="tag" style="margin-top:12px;">Dashboard</span></a>
+        <a class="card" href="influencer-dashboard.html"><h2 style="font-size:18px;">Influencer dashboard <span class="arrow">→</span></h2><p class="nv">Available campaigns · applications · earnings · upcoming</p><span class="tag" style="margin-top:12px;">Dashboard</span></a>
+        <a class="card" href="discover-creators.html"><h2 style="font-size:18px;">Discover creators <span class="arrow">→</span></h2><p class="nv">Restaurant → influencer discovery, filters, AI match</p><span class="tag" style="margin-top:12px;">Discovery</span></a>
+        <a class="card" href="discover-restaurants.html"><h2 style="font-size:18px;">Discover restaurants <span class="arrow">→</span></h2><p class="nv">Influencer → campaign discovery, filters</p><span class="tag" style="margin-top:12px;">Discovery</span></a>
+        <a class="card" href="campaign-detail.html"><h2 style="font-size:18px;">Campaign detail <span class="arrow">→</span></h2><p class="nv">Campaign page, apply, application management</p><span class="tag" style="margin-top:12px;">Apply</span></a>
+        <a class="card" href="deal-room.html"><h2 style="font-size:18px;">Deal room <span class="arrow">→</span></h2><p class="nv">Negotiation, contract, escrow, moderated chat</p><span class="tag" style="margin-top:12px;">Core</span></a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" data-od-id="privacy" style="border-top:1px solid var(--border);">
+    <div class="container" style="max-width: 720px;">
+      <p class="eyebrow">Guarding Principle</p>
+      <h2 style="font-size:22px;">Contact details never leave the platform.</h2>
+      <p class="lead" style="margin-top:10px;">A message safety layer intercepts phone numbers, emails, handles and URLs before they reach the other party, so discovery, negotiation and payment all stay inside CollabTable.</p>
+    </div>
+  </section>
+</main>
+
+<footer class="section" data-od-id="footer" style="border-top:1px solid var(--border);">
+  <div class="container" style="display:flex;justify-content:space-between;color:var(--muted);font-size:13px;flex-wrap:wrap;gap:12px;">
+    <span>CollabTable · working prototype, India</span>
+    <span class="meta">No direct contact info is surfaced on any screen</span>
+  </div>
+</footer>
+<style>
+  @keyframes ctRise{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:none;}}
+  .grid-nav>a{animation:ctRise .5s ease both;position:relative;}
+  .grid-nav>a:hover{transform:translateY(-2px);}
+  .grid-nav>a:focus-visible{outline:2px solid var(--accent);}
+</style>
+<script>
+  (function(){
+    var cards=[].slice.call(document.querySelectorAll('.grid-nav>a'));
+    if(!window.matchMedia||!window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+      cards.forEach(function(a,i){a.style.animationDelay=(i*0.05)+'s';});
+    }
+  })();
+</script>
+<style>
+  :root[data-theme="dark"]{
+    --bg:      oklch(18% 0.025 295);
+    --surface: oklch(24% 0.03 295);
+    --fg:      oklch(93% 0.02 60);
+    --muted:   oklch(66% 0.03 280);
+    --border:  oklch(34% 0.035 295);
+    --accent:  oklch(68% 0.16 304);
+    --good:    oklch(64% 0.14 152);
+    --warn:    oklch(72% 0.16 70);
+    --danger:  oklch(66% 0.18 28);
+    --accent-soft: color-mix(in oklch, var(--accent) 18%, transparent);
+    --fg-soft:     color-mix(in oklch, var(--fg) 7%, transparent);
+  }
+  .theme-toggle{
+    position:fixed;top:14px;right:14px;z-index:1000;
+    display:inline-flex;align-items:center;gap:8px;
+    padding:8px 13px;border:1px solid var(--border);border-radius:999px;
+    background:var(--surface);color:var(--fg);
+    font-family:var(--font-mono);font-size:12px;font-weight:600;
+    letter-spacing:.04em;text-transform:uppercase;cursor:pointer;
+    box-shadow:0 2px 14px color-mix(in oklch, var(--fg) 12%, transparent);
+  }
+  .theme-toggle:hover{background:var(--accent-soft);}
+</style>
+<button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle colour theme">
+  <span id="themeLabel">Dark</span>
+</button>
+<script>
+  (function(){
+    var root=document.documentElement;
+    function applyTheme(t){
+      root.setAttribute('data-theme',t);
+      try{localStorage.setItem('ct-theme',t);}catch(e){}
+      var lab=document.getElementById('themeLabel');
+      if(lab){lab.textContent=(t==='dark')?'Light':'Dark';}
+    }
+    try{
+      var saved=localStorage.getItem('ct-theme');
+      if(saved){applyTheme(saved);}
+      else if(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches){applyTheme('dark');}
+      else{applyTheme('light');}
+    }catch(e){applyTheme('light');}
+    var btn=document.getElementById('themeToggle');
+    if(btn){btn.addEventListener('click',function(){
+      applyTheme(root.getAttribute('data-theme')==='dark'?'light':'dark');
+    });}
+  })();
+</script>
+</body>
+
+</html>
